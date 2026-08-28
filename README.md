@@ -64,8 +64,27 @@ and updating the database schema.
 
 ### 2. Schema / Entity Generation
 
-Generate MikroORM entities from your Better Auth configuration and active plugins with the
-official Better Auth CLI:
+> [!NOTE]
+> Ensure `@a77ay/better-auth-mikro-orm` and `@mikro-orm/core` are installed in your project before generating, as the Better Auth CLI dynamically imports your auth configuration file.
+
+#### Configuring Generator Options
+
+Options such as `entityStyle`, `casing`, and the default `schemaFile` path are configured directly inside `mikroOrmAdapter` in your auth configuration:
+
+```typescript
+export const auth = betterAuth({
+  database: mikroOrmAdapter({
+    em: () => RequestContext.getEntityManager() ?? orm.em,
+    entityStyle: "define-entity", // "define-entity" (default) | "decorators"
+    casing: "snake_case", // "snake_case" | "camelCase" (default)
+    schemaFile: "src/entities/auth.ts", // Default output path
+  }),
+});
+```
+
+#### Running the Generator
+
+Run the official Better Auth CLI to generate your entity schema:
 
 ```bash
 # Using npm
@@ -80,6 +99,12 @@ yarn dlx auth@latest generate --config ./src/auth.ts --output ./src/entities/aut
 # Using bun
 bunx auth@latest generate --config ./src/auth.ts --output ./src/entities/auth.ts --yes
 ```
+
+CLI flags:
+
+- `--config <path>`: Path to your auth configuration file (e.g. `./src/auth.ts`).
+- `--output <path>`: Path where the generated entity file will be written (overrides `schemaFile`).
+- `--yes`: Overwrite existing files without confirmation prompts.
 
 The generated module exports each entity and a `betterAuthEntities` array. Register that array in
 your MikroORM configuration:
