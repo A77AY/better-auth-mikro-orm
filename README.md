@@ -68,7 +68,17 @@ Generate MikroORM entities from your Better Auth configuration and active plugin
 official Better Auth CLI:
 
 ```bash
+# Using npm
+npx auth@latest generate --config ./src/auth.ts --output ./src/entities/auth.ts --yes
+
+# Using pnpm
 pnpm dlx auth@latest generate --config ./src/auth.ts --output ./src/entities/auth.ts --yes
+
+# Using yarn
+yarn dlx auth@latest generate --config ./src/auth.ts --output ./src/entities/auth.ts --yes
+
+# Using bun
+bunx auth@latest generate --config ./src/auth.ts --output ./src/entities/auth.ts --yes
 ```
 
 The generated module exports each entity and a `betterAuthEntities` array. Register that array in
