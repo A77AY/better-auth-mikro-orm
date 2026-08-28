@@ -1,7 +1,7 @@
 {
   "name": "@a77ay/better-auth-mikro-orm",
   "version": "0.0.0",
-  "description": "MikroORM community adapter and entity generator for Better Auth.",
+  "description": "MikroORM database adapter and entity generator for Better Auth.",
   "keywords": [
     "adapter",
     "auth",
@@ -30,6 +30,7 @@
     "dist"
   ],
   "type": "module",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": "./dist/index.mjs",
     "./package.json": "./package.json"
@@ -41,16 +42,36 @@
     "build": "vp pack",
     "dev": "vp pack --watch",
     "test": "vp test",
+    "test:postgres": "DB_TYPE=postgres vp test",
+    "test:mongo": "DB_TYPE=mongodb vp test",
+    "test:adapter": "vp test tests/official-adapter.test.ts",
+    "test:adapter:postgres": "DB_TYPE=postgres vp test tests/official-adapter.test.ts",
     "check": "vp check",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "changeset publish",
     "prepublishOnly": "vp run build",
     "prepare": "vp config"
   },
   "devDependencies": {
-    "@types/node": "^26.1.1",
-    "bumpp": "^11.1.0",
+    "@better-auth/test-utils": "^1.7.2",
+    "@changesets/changelog-github": "^1.0.0",
+    "@changesets/cli": "^3.0.1",
+    "@mikro-orm/core": "^7.1.14",
+    "@mikro-orm/mongodb": "^7.1.14",
+    "@mikro-orm/postgresql": "^7.1.14",
+    "@mikro-orm/sqlite": "^7.1.14",
+    "@types/node": "^26.4.0",
+    "@types/pg": "^8.23.1",
+    "better-auth": "^1.7.2",
+    "pg": "^8.23.0",
     "typescript": "^7.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:"
+  },
+  "peerDependencies": {
+    "@mikro-orm/core": "^7.0.0",
+    "better-auth": "^1.0.0"
   },
   "devEngines": {
     "packageManager": {

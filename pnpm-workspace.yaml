@@ -1,6 +1,9 @@
+allowBuilds:
+  better-sqlite3: true
+  mongodb-memory-server: set this to true or false
 catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@0.2.8
-  vite-plus: 0.2.8
+  vite: npm:@voidzero-dev/vite-plus-core@0.3.0
+  vite-plus: 0.3.0
 overrides:
   vite: "catalog:"
 peerDependencyRules:
@@ -8,3 +11,5 @@ peerDependencyRules:
     - vite
   allowedVersions:
     vite: "*"
+onlyBuiltDependencies:
+  - better-sqlite3

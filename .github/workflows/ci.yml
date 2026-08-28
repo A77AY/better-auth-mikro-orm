@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test ${{ matrix.db }} (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:alpine
+        env:
+          POSTGRES_DB: better_auth_test
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["24", "latest"]
+        db: ["sqlite", "postgres", "mongodb"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: true
+
+      - name: Install dependencies
+        run: vp install
+
+      - name: Check (Format, Lint, Types)
+        run: vp check
+        if: matrix.db == 'sqlite'
+
+      - name: Run tests
+        run: vp test
+        env:
+          DB_TYPE: ${{ matrix.db }}
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/better_auth_test
+          MONGODB_URI: mongodb://localhost:27017/better_auth_test
+
+      - name: Build library
+        run: vp run build
+        if: matrix.db == 'sqlite'

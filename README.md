@@ -1,16 +1,20 @@
 # @a77ay/better-auth-mikro-orm
 
-MikroORM community adapter and entity/schema generator for [Better Auth](https://www.better-auth.com).
+MikroORM database adapter and entity generator for [Better Auth](https://www.better-auth.com).
 
-[![npm version](https://img.shields.io/npm/v/@a77ay/better-auth-mikro-orm.svg)](https://www.npmjs.com/package/@a77ay/better-auth-mikro-orm)
+[![npm version](https://img.shields.io/npm/v/@a77ay/better-auth-mikro-orm.svg?color=blue)](https://www.npmjs.com/package/@a77ay/better-auth-mikro-orm)
+[![npm downloads](https://img.shields.io/npm/dm/@a77ay/better-auth-mikro-orm.svg?color=blue)](https://www.npmjs.com/package/@a77ay/better-auth-mikro-orm)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/@a77ay/better-auth-mikro-orm.svg)](https://bundlephobia.com/package/@a77ay/better-auth-mikro-orm)
 [![license](https://img.shields.io/npm/l/@a77ay/better-auth-mikro-orm.svg)](https://github.com/A77AY/better-auth-mikro-orm/blob/main/LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
 ## Features
 
-- 🔌 **MikroORM Adapter**: Community database adapter for Better Auth.
-- ⚡ **Entity & Schema Generator**: Generate MikroORM entities and schemas compatible with Better Auth core and plugins.
-- 🗄️ **Multi-Driver Support**: Compatible with PostgreSQL, MySQL, SQLite, MongoDB and other databases supported by MikroORM.
-- 🔒 **Type-Safe**: Full TypeScript support with end-to-end type safety.
+- 🔌 **Native MikroORM Adapter**: Seamlessly integrates with MikroORM's `EntityManager`, Identity Map, and Unit of Work.
+- ⚡ **Entity & Schema Generator**: Generate MikroORM entities compatible with Better Auth core and all active plugins.
+- 🗄️ **Multi-Database Support**: Full support for PostgreSQL, MySQL, MariaDB, SQLite, LibSQL, MongoDB, and custom drivers.
+- 🚀 **Optimized Relations**: Batched queries for joined relations to prevent N+1 issues.
+- 🔒 **Type-Safe**: Complete TypeScript support with automatic type inference.
 
 ## Installation
 
@@ -28,6 +32,12 @@ yarn add @a77ay/better-auth-mikro-orm @mikro-orm/core
 bun add @a77ay/better-auth-mikro-orm @mikro-orm/core
 ```
 
+## Compatibility
+
+| `@a77ay/better-auth-mikro-orm` | `better-auth` | `@mikro-orm/core` |
+| ------------------------------ | ------------- | ----------------- |
+| `0.x` (latest)                 | `^1.7.0`      | `^7.0.0`          |
+
 ## Quick Start
 
 ### 1. Adapter Setup
@@ -35,21 +45,73 @@ bun add @a77ay/better-auth-mikro-orm @mikro-orm/core
 ```typescript
 import { betterAuth } from "better-auth";
 import { mikroOrmAdapter } from "@a77ay/better-auth-mikro-orm";
-import { em } from "./mikro-orm.config";
+import { RequestContext } from "@mikro-orm/core";
+import { orm } from "./mikro-orm.config";
 
 export const auth = betterAuth({
   database: mikroOrmAdapter({
-    em,
+    // Provide an EntityManager or a getter returning the request-scoped EntityManager
+    em: () => RequestContext.getEntityManager() ?? orm.em,
+    schemaFile: "src/entities/auth.ts",
   }),
 });
 ```
 
+Every Better Auth model must be registered as a MikroORM entity. Its `tableName` must match the
+corresponding Better Auth model name (including configured model renames or pluralization). The
+adapter handles data access and transactions; MikroORM migrations remain responsible for creating
+and updating the database schema.
+
 ### 2. Schema / Entity Generation
 
-Generate MikroORM entities based on your Better Auth configuration and active plugins:
+Generate MikroORM entities from your Better Auth configuration and active plugins with the
+official Better Auth CLI:
 
 ```bash
-npx @a77ay/better-auth-mikro-orm generate
+pnpm dlx auth@latest generate --config ./src/auth.ts --output ./src/entities/auth.ts --yes
+```
+
+The generated module exports each entity and a `betterAuthEntities` array. Register that array in
+your MikroORM configuration:
+
+```typescript
+import { betterAuthEntities } from "./src/entities/auth";
+
+export default {
+  entities: [...betterAuthEntities],
+};
+```
+
+After generating, use MikroORM's migration tooling to create and apply the database migration.
+
+## Configuration Options
+
+| Option         | Type                                     | Default                  | Description                                                                             |
+| -------------- | ---------------------------------------- | ------------------------ | --------------------------------------------------------------------------------------- |
+| `em`           | `EntityManager \| (() => EntityManager)` | **Required**             | MikroORM `EntityManager` or a getter returning the request-scoped instance.             |
+| `provider`     | `DatabaseProvider`                       | Auto-detected            | Database provider (`"postgresql"`, `"sqlite"`, `"mysql"`, `"mongodb"`, or custom).      |
+| `casing`       | `"snake_case" \| "camelCase"`            | `"camelCase"`            | Naming convention for generated database columns.                                       |
+| `entityStyle`  | `"define-entity" \| "decorators"`        | `"define-entity"`        | Entity definition style (`defineEntity` fluent schema or `@Entity()` class decorators). |
+| `schemaFile`   | `string`                                 | `"src/entities/auth.ts"` | Default output file path for CLI schema generation.                                     |
+| `debugLogs`    | `boolean \| DBAdapterDebugLogOption`     | `false`                  | Enable Better Auth adapter debug logging.                                               |
+| `usePlural`    | `boolean`                                | `false`                  | Use plural table names for generated entities.                                          |
+| `transactions` | `boolean`                                | `true`                   | Whether to execute multi-operation callbacks in a transaction.                          |
+
+### Entity Styles
+
+The generator supports two entity definition styles:
+
+- **`define-entity` (default)**: Modern MikroORM v7 fluent `defineEntity()` schema API with automatic TypeScript type inference (`InferEntity`).
+- **`decorators`**: Class-based entities with `@Entity()`, `@Property()`, `@PrimaryKey()`, and `@ManyToOne()`.
+
+```typescript
+export const auth = betterAuth({
+  database: mikroOrmAdapter({
+    em: () => RequestContext.getEntityManager() ?? orm.em,
+    entityStyle: "define-entity", // "define-entity" | "decorators"
+    casing: "snake_case", // "snake_case" | "camelCase"
+  }),
+});
 ```
 
 ## Development
@@ -62,10 +124,28 @@ This project uses [Vite+](https://viteplus.dev) for tooling:
   vp install
   ```
 
-- Run tests:
+- Run tests (SQLite in-memory):
 
   ```bash
   vp test
+  ```
+
+- Run tests (PostgreSQL):
+
+  ```bash
+  vpr test:postgres
+  ```
+
+- Run tests (MongoDB):
+
+  ```bash
+  vpr test:mongo
+  ```
+
+- Run official Better Auth test suites:
+
+  ```bash
+  vpr test:adapter
   ```
 
 - Type check, lint and format:
@@ -74,7 +154,7 @@ This project uses [Vite+](https://viteplus.dev) for tooling:
   vp check
   ```
 
-- Build:
+- Build library:
   ```bash
   vp pack
   ```
