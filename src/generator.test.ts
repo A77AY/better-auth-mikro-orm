@@ -1,7 +1,7 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { ReferenceKind } from "@mikro-orm/core";
+import { ReferenceKind, wrap } from "@mikro-orm/core";
 import { MikroORM } from "@mikro-orm/sqlite";
 import type { BetterAuthOptions } from "better-auth";
 import type { BetterAuthDBSchema } from "better-auth/db";
@@ -177,7 +177,7 @@ describe("generateMikroOrmSchema", () => {
     }
   });
 
-  test("supports casing: snake_case for generated field names", () => {
+  test("supports snake_case columns without changing entity property names", async () => {
     const customTables = {
       user: {
         modelName: "user",
@@ -192,8 +192,8 @@ describe("generateMikroOrmSchema", () => {
       tables: customTables,
       casing: "snake_case",
     });
-    expect(defineResult.code).toContain('email_address: p.text().fieldName("email_address")');
-    expect(defineResult.code).toContain('email_verified: p.boolean().fieldName("email_verified")');
+    expect(defineResult.code).toContain('emailAddress: p.text().fieldName("email_address")');
+    expect(defineResult.code).toContain('emailVerified: p.boolean().fieldName("email_verified")');
 
     const decoratorResult = generateMikroOrmSchema({
       tables: customTables,
@@ -202,6 +202,45 @@ describe("generateMikroOrmSchema", () => {
     });
     expect(decoratorResult.code).toContain('fieldName: "email_address"');
     expect(decoratorResult.code).toContain('fieldName: "email_verified"');
+    expect(decoratorResult.code).toContain("emailAddress!: string;");
+    expect(decoratorResult.code).toContain("emailVerified!: boolean;");
+
+    const directory = await mkdtemp(join(process.cwd(), ".tmp-generator-"));
+    temporaryDirectories.push(directory);
+    const file = join(directory, "snake-case-auth.ts");
+    await writeFile(file, defineResult.code);
+    const generated = (await import(`${pathToFileURL(file).href}?test=${Date.now()}`)) as {
+      betterAuthEntities: any[];
+    };
+    const orm = await MikroORM.init({
+      dbName: ":memory:",
+      entities: generated.betterAuthEntities,
+    });
+
+    try {
+      await orm.schema.create();
+      const userMeta = [...orm.getMetadata().getAll().values()].find(
+        ({ tableName }) => tableName === "user",
+      )!;
+      expect(userMeta.properties.emailAddress.fieldNames).toEqual(["email_address"]);
+      expect(userMeta.properties.emailVerified.fieldNames).toEqual(["email_verified"]);
+
+      const em = orm.em.fork();
+      const user = em.create(userMeta.class, {
+        id: "user-1",
+        emailAddress: "user@example.com",
+        emailVerified: true,
+      });
+      em.persist(user);
+      await em.flush();
+      const stored = await em.findOneOrFail(userMeta.class, { id: "user-1" });
+      expect(wrap(stored).toPOJO()).toMatchObject({
+        emailAddress: "user@example.com",
+        emailVerified: true,
+      });
+    } finally {
+      await orm.close(true);
+    }
   });
 
   test("sorts tables topologically so forward references do not throw TDZ errors", async () => {

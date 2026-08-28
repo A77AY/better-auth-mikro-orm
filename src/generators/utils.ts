@@ -57,6 +57,10 @@ export function databasePropertyName(
   return fieldName;
 }
 
+export function entityPropertyName(fieldName: string, field: DBFieldAttribute) {
+  return field.fieldName ?? fieldName;
+}
+
 export function findReferencedTable(entries: [string, Table][], model: string) {
   return entries.find(
     ([defaultModel, table]) => defaultModel === model || table.modelName === model,

@@ -164,9 +164,24 @@ export function transformWhere(
 ): FilterQuery<EntityRecord> {
   if (!where?.length) return {};
 
-  const conditions = where.map((condition) => transformCondition(condition, context));
-  if (conditions.length === 1) return conditions[0] as FilterQuery<EntityRecord>;
+  const conditions = where.map((condition) => ({
+    connector: condition.connector ?? "AND",
+    filter: transformCondition(condition, context),
+  }));
+  if (conditions.length === 1) return conditions[0].filter as FilterQuery<EntityRecord>;
 
-  const isOr = where.some(({ connector }) => connector === "OR");
-  return (isOr ? { $or: conditions } : { $and: conditions }) as FilterQuery<EntityRecord>;
+  const andConditions = conditions
+    .filter(({ connector }) => connector === "AND")
+    .map(({ filter }) => filter);
+  const orConditions = conditions
+    .filter(({ connector }) => connector === "OR")
+    .map(({ filter }) => filter);
+
+  if (andConditions.length && orConditions.length) {
+    return {
+      $and: [...andConditions, { $or: orConditions }],
+    } as FilterQuery<EntityRecord>;
+  }
+  if (orConditions.length) return { $or: orConditions } as FilterQuery<EntityRecord>;
+  return { $and: andConditions } as FilterQuery<EntityRecord>;
 }

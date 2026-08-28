@@ -3,6 +3,7 @@ import type { MikroOrmSchemaGeneratorOptions, Table } from "./types";
 import {
   createModelNames,
   databasePropertyName,
+  entityPropertyName,
   findReferencedTable,
   getSortedTableEntries,
   propertyKey,
@@ -18,7 +19,8 @@ function renderDecoratorProperty(
   modelNames: Map<string, string>,
   options: MikroOrmSchemaGeneratorOptions,
 ) {
-  const propertyName = databasePropertyName(fieldName, field, options);
+  const propertyName = entityPropertyName(fieldName, field);
+  const databaseName = databasePropertyName(fieldName, field, options);
   const optional = field.required === false ? "?" : "!";
   const reference = field.references;
   const referencedEntry = reference ? findReferencedTable(entries, reference.model) : undefined;
@@ -27,13 +29,16 @@ function renderDecoratorProperty(
     const [referencedModel, referencedTable] = referencedEntry;
     const referencedField = referencedTable.fields[reference.field];
     const referencedProperty = referencedField
+      ? entityPropertyName(reference.field, referencedField)
+      : reference.field;
+    const referencedDatabaseName = referencedField
       ? databasePropertyName(reference.field, referencedField, options)
       : reference.field;
     const targetModel = modelNames.get(referencedModel)!;
     const opts: string[] = [
       "mapToPk: true",
-      `fieldName: ${quote(propertyName)}`,
-      `referenceColumnName: ${quote(referencedProperty)}`,
+      `fieldName: ${quote(databaseName)}`,
+      `referenceColumnName: ${quote(referencedDatabaseName)}`,
       `deleteRule: ${quote(reference.onDelete ?? "cascade")}`,
     ];
     if (reference.field !== "id") opts.push(`targetKey: ${quote(referencedProperty)}`);
@@ -46,7 +51,7 @@ function renderDecoratorProperty(
   if (Array.isArray(field.type)) {
     const opts: string[] = [
       `items: () => ${stringArray(field.type)}`,
-      `fieldName: ${quote(propertyName)}`,
+      `fieldName: ${quote(databaseName)}`,
     ];
     if (field.required === false) opts.push("nullable: true");
     if (typeof field.defaultValue === "string") {
@@ -61,7 +66,7 @@ function renderDecoratorProperty(
   }
 
   const type = scalarType(field, options);
-  const opts: string[] = [`type: ${quote(type.mikroOrm)}`, `fieldName: ${quote(propertyName)}`];
+  const opts: string[] = [`type: ${quote(type.mikroOrm)}`, `fieldName: ${quote(databaseName)}`];
   if (field.bigint) opts.push('runtimeType: "number"');
   if (field.required === false) opts.push("nullable: true");
   if (field.unique) opts.push("unique: true");
@@ -80,14 +85,14 @@ function renderDecoratorProperty(
   ${propertyKey(propertyName)}${optional}: ${type.typescript};`;
 }
 
-function renderClassIndexes(table: Table, options: MikroOrmSchemaGeneratorOptions) {
+function renderClassIndexes(table: Table) {
   const indexes = table.indexes?.filter((index) => !index.unique) ?? [];
   const uniques = table.indexes?.filter((index) => index.unique) ?? [];
   const decorators: string[] = [];
 
   for (const index of indexes) {
     const properties = index.fields.map((fieldName) =>
-      databasePropertyName(fieldName, table.fields[fieldName] ?? { type: "string" }, options),
+      entityPropertyName(fieldName, table.fields[fieldName] ?? { type: "string" }),
     );
     const opts = [
       index.name ? `name: ${quote(index.name)}` : "",
@@ -100,7 +105,7 @@ function renderClassIndexes(table: Table, options: MikroOrmSchemaGeneratorOption
 
   for (const unique of uniques) {
     const properties = unique.fields.map((fieldName) =>
-      databasePropertyName(fieldName, table.fields[fieldName] ?? { type: "string" }, options),
+      entityPropertyName(fieldName, table.fields[fieldName] ?? { type: "string" }),
     );
     const opts = [
       unique.name ? `name: ${quote(unique.name)}` : "",
@@ -124,7 +129,7 @@ export function generateDecoratorsSchema(options: MikroOrmSchemaGeneratorOptions
     const pkOptions = options.numericIds
       ? '{ autoincrement: true, fieldName: "id" }'
       : '{ fieldName: "id" }';
-    const classIndexes = renderClassIndexes(table, options);
+    const classIndexes = renderClassIndexes(table);
     const properties = Object.entries(table.fields).map(([fieldName, field]) =>
       renderDecoratorProperty(fieldName, field, entries, modelNames, options),
     );

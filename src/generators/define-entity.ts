@@ -3,6 +3,7 @@ import type { MikroOrmSchemaGeneratorOptions, Table } from "./types";
 import {
   createModelNames,
   databasePropertyName,
+  entityPropertyName,
   findReferencedTable,
   getSortedTableEntries,
   propertyKey,
@@ -17,7 +18,8 @@ function renderDefineProperty(
   modelNames: Map<string, string>,
   options: MikroOrmSchemaGeneratorOptions,
 ) {
-  const propertyName = databasePropertyName(fieldName, field, options);
+  const propertyName = entityPropertyName(fieldName, field);
+  const databaseName = databasePropertyName(fieldName, field, options);
   const chains: string[] = [];
   const reference = field.references;
   const referencedEntry = reference ? findReferencedTable(entries, reference.model) : undefined;
@@ -26,37 +28,40 @@ function renderDefineProperty(
     const [referencedModel, referencedTable] = referencedEntry;
     const referencedField = referencedTable.fields[reference.field];
     const referencedProperty = referencedField
+      ? entityPropertyName(reference.field, referencedField)
+      : reference.field;
+    const referencedDatabaseName = referencedField
       ? databasePropertyName(reference.field, referencedField, options)
       : reference.field;
     const targetModel = modelNames.get(referencedModel)!;
 
     chains.push(`p.manyToOne(${targetModel})`);
     chains.push("mapToPk()");
-    chains.push(`fieldName(${quote(propertyName)})`);
-    chains.push(`referenceColumnName(${quote(referencedProperty)})`);
+    chains.push(`fieldName(${quote(databaseName)})`);
+    chains.push(`referenceColumnName(${quote(referencedDatabaseName)})`);
     if (reference.field !== "id") chains.push(`targetKey(${quote(referencedProperty)})`);
     chains.push(`deleteRule(${quote(reference.onDelete ?? "cascade")})`);
   } else if (Array.isArray(field.type)) {
     chains.push(`p.enum(${stringArray(field.type)})`);
-    chains.push(`fieldName(${quote(propertyName)})`);
+    chains.push(`fieldName(${quote(databaseName)})`);
   } else if (field.type === "date") {
     chains.push(options.supportsDates === false ? "p.string()" : "p.datetime()");
-    chains.push(`fieldName(${quote(propertyName)})`);
+    chains.push(`fieldName(${quote(databaseName)})`);
   } else if (field.type === "boolean") {
     chains.push(options.supportsBooleans === false ? "p.integer()" : "p.boolean()");
-    chains.push(`fieldName(${quote(propertyName)})`);
+    chains.push(`fieldName(${quote(databaseName)})`);
   } else if (field.type === "number") {
     chains.push(field.bigint ? 'p.bigint("number")' : "p.integer()");
-    chains.push(`fieldName(${quote(propertyName)})`);
+    chains.push(`fieldName(${quote(databaseName)})`);
   } else if (field.type === "json") {
     chains.push(options.supportsJSON === false ? "p.text()" : "p.json()");
-    chains.push(`fieldName(${quote(propertyName)})`);
+    chains.push(`fieldName(${quote(databaseName)})`);
   } else if (field.type === "string[]" || field.type === "number[]") {
     chains.push(options.supportsArrays ? "p.array()" : "p.text()");
-    chains.push(`fieldName(${quote(propertyName)})`);
+    chains.push(`fieldName(${quote(databaseName)})`);
   } else {
     chains.push(field.sortable || field.index || field.unique ? "p.string()" : "p.text()");
-    chains.push(`fieldName(${quote(propertyName)})`);
+    chains.push(`fieldName(${quote(databaseName)})`);
   }
 
   if (field.required === false) chains.push("nullable()");
@@ -75,7 +80,7 @@ function renderDefineProperty(
   return `    ${propertyKey(propertyName)}: ${chains.join(".")},`;
 }
 
-function renderDefineIndexes(table: Table, options: MikroOrmSchemaGeneratorOptions) {
+function renderDefineIndexes(table: Table) {
   const indexes = table.indexes?.filter((index) => !index.unique) ?? [];
   const uniques = table.indexes?.filter((index) => index.unique) ?? [];
   const render = (items: typeof indexes) => {
@@ -83,7 +88,7 @@ function renderDefineIndexes(table: Table, options: MikroOrmSchemaGeneratorOptio
 
     const values = items.map((index) => {
       const properties = index.fields.map((fieldName) =>
-        databasePropertyName(fieldName, table.fields[fieldName] ?? { type: "string" }, options),
+        entityPropertyName(fieldName, table.fields[fieldName] ?? { type: "string" }),
       );
       return `    {
 ${index.name ? `      name: ${quote(index.name)},\n` : ""}      properties: ${stringArray(properties)},
@@ -107,7 +112,7 @@ export function generateDefineEntitySchema(options: MikroOrmSchemaGeneratorOptio
     const properties = Object.entries(table.fields).map(([fieldName, field]) =>
       renderDefineProperty(fieldName, field, entries, modelNames, options),
     );
-    const { indexes, uniques } = renderDefineIndexes(table, options);
+    const { indexes, uniques } = renderDefineIndexes(table);
 
     return `export const ${modelName} = defineEntity({
   name: ${quote(modelName)},

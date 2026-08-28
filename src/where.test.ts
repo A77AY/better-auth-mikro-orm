@@ -145,7 +145,7 @@ describe("transformWhere", () => {
     expect(and[4]).toHaveProperty("$not");
   });
 
-  test("handles OR connector by grouping into $or", () => {
+  test("groups OR conditions without weakening AND conditions", () => {
     const filter = transformWhere(
       [
         { field: "email", operator: "eq", value: "alice@example.com" },
@@ -156,11 +156,26 @@ describe("transformWhere", () => {
     );
 
     expect(filter).toEqual({
-      $or: [
+      $and: [
         { email: { $eq: "alice@example.com" } },
-        { role: { $eq: "admin" } },
-        { role: { $eq: "superuser" } },
+        {
+          $or: [{ role: { $eq: "admin" } }, { role: { $eq: "superuser" } }],
+        },
       ],
+    });
+  });
+
+  test("groups conditions into $or when all connectors are OR", () => {
+    const filter = transformWhere(
+      [
+        { field: "role", operator: "eq", value: "admin", connector: "OR" },
+        { field: "role", operator: "eq", value: "superuser", connector: "OR" },
+      ],
+      { meta: mockMeta, mongo: false },
+    );
+
+    expect(filter).toEqual({
+      $or: [{ role: { $eq: "admin" } }, { role: { $eq: "superuser" } }],
     });
   });
 });
