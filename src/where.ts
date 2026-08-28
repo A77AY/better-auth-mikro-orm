@@ -49,20 +49,25 @@ interface TransformWhereContext {
   mongo: boolean;
 }
 
-function transformCondition(
-  { field, mode, operator = "eq", value }: WhereInput,
-  context: TransformWhereContext,
-): EntityRecord {
-  const insensitive = mode === "insensitive";
-  const property =
-    context.meta.properties[field] ??
-    Object.values(context.meta.properties).find(
+export function findProperty(meta: EntityMetadata<EntityRecord>, field: string) {
+  return (
+    meta.properties[field] ??
+    Object.values(meta.properties).find(
       (item) =>
         item.name === field ||
         item.name.toLowerCase() === field.toLowerCase() ||
         item.fieldNames?.includes(field) ||
         item.fieldNames?.some((fn) => fn.toLowerCase() === field.toLowerCase()),
-    );
+    )
+  );
+}
+
+function transformCondition(
+  { field, mode, operator = "eq", value }: WhereInput,
+  context: TransformWhereContext,
+): EntityRecord {
+  const insensitive = mode === "insensitive";
+  const property = findProperty(context.meta, field);
 
   if (!property) {
     throw new TypeError(

@@ -9,7 +9,9 @@ import {
   type MikroORM,
 } from "@mikro-orm/core";
 import { BetterAuthError } from "better-auth";
-import { transformWhere } from "./where";
+import { findProperty, transformWhere } from "./where";
+
+export { findProperty };
 
 export type EntityRecord = Record<string, unknown>;
 export type EntityManagerProvider = EntityManager | MikroORM | (() => EntityManager | MikroORM);

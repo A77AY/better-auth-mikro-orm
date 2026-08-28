@@ -9,6 +9,7 @@ import {
 } from "better-auth/adapters";
 import {
   findOneForMutation,
+  findProperty,
   getEntityManager,
   isMongo,
   primaryKeyWhere,
@@ -116,8 +117,6 @@ export interface MikroOrmAdapterOptions {
    */
   entityStyle?: EntityStyle;
 }
-
-export type MikroOrmAdapterConfig = MikroOrmAdapterOptions;
 
 function createOrmAdapter(
   provider: EntityManagerProvider,
@@ -291,30 +290,14 @@ function createOrmAdapter(
           const update: EntityRecord = {};
           if (set) {
             for (const [field, value] of Object.entries(set)) {
-              const property =
-                meta.properties[field] ??
-                Object.values(meta.properties).find(
-                  (item) =>
-                    item.name === field ||
-                    item.name.toLowerCase() === field.toLowerCase() ||
-                    item.fieldNames?.includes(field) ||
-                    item.fieldNames?.some((fn) => fn.toLowerCase() === field.toLowerCase()),
-                );
+              const property = findProperty(meta, field);
               const key = property?.name ?? field;
               update[key] = value;
             }
           }
 
           for (const [field, delta] of Object.entries(increment)) {
-            const property =
-              meta.properties[field] ??
-              Object.values(meta.properties).find(
-                (item) =>
-                  item.name === field ||
-                  item.name.toLowerCase() === field.toLowerCase() ||
-                  item.fieldNames?.includes(field) ||
-                  item.fieldNames?.some((fn) => fn.toLowerCase() === field.toLowerCase()),
-              );
+            const property = findProperty(meta, field);
             if (!property) {
               throw new BetterAuthError(
                 `No field "${field}" exists on MikroORM entity "${meta.className}".`,
