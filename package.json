@@ -1,16 +1,30 @@
 {
-  "name": "better-auth-mikro-orm",
+  "name": "@a77ay/better-auth-mikro-orm",
   "version": "0.0.0",
-  "description": "A starter for creating a TypeScript package.",
-  "homepage": "https://github.com/author/library#readme",
+  "description": "MikroORM community adapter and entity generator for Better Auth.",
+  "keywords": [
+    "adapter",
+    "auth",
+    "authentication",
+    "better-auth",
+    "better-auth-adapter",
+    "generator",
+    "mikro-orm",
+    "mikroorm",
+    "schema-generator"
+  ],
+  "homepage": "https://github.com/A77AY/better-auth-mikro-orm#readme",
   "bugs": {
-    "url": "https://github.com/author/library/issues"
+    "url": "https://github.com/A77AY/better-auth-mikro-orm/issues"
   },
   "license": "MIT",
-  "author": "Author Name <author.name@mail.com>",
+  "author": {
+    "name": "A77AY",
+    "url": "https://github.com/A77AY"
+  },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/author/library.git"
+    "url": "git+https://github.com/A77AY/better-auth-mikro-orm.git"
   },
   "files": [
     "dist"
