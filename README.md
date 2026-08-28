@@ -19,11 +19,11 @@ MikroORM database adapter and entity generator for [Better Auth](https://www.bet
 ## Installation
 
 ```bash
-# Using pnpm
-pnpm add @a77ay/better-auth-mikro-orm @mikro-orm/core
-
 # Using npm
 npm install @a77ay/better-auth-mikro-orm @mikro-orm/core
+
+# Using pnpm
+pnpm add @a77ay/better-auth-mikro-orm @mikro-orm/core
 
 # Using yarn
 yarn add @a77ay/better-auth-mikro-orm @mikro-orm/core
