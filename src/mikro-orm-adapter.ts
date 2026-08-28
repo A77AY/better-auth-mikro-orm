@@ -27,17 +27,7 @@ type FindManyInput = Parameters<CustomAdapter["findMany"]>[0];
 type ConsumeOneInput = Parameters<CustomAdapter["consumeOne"]>[0];
 type IncrementOneInput = Parameters<CustomAdapter["incrementOne"]>[0];
 
-export interface MikroOrmAdapterConfig {
-  /**
-   * Entity manager instance, or a getter function returning the request-scoped EntityManager.
-   *
-   * @example
-   * ```ts
-   * em: () => RequestContext.getEntityManager() ?? orm.em
-   * ```
-   */
-  em: EntityManagerProvider;
-
+export interface MikroOrmAdapterOptions {
   /**
    * Database provider (e.g. "postgresql", "sqlite", "mysql", "mongodb").
    * Automatically detected from the EntityManager platform if omitted.
@@ -127,11 +117,13 @@ export interface MikroOrmAdapterConfig {
   entityStyle?: EntityStyle;
 }
 
+export type MikroOrmAdapterConfig = MikroOrmAdapterOptions;
+
 function createOrmAdapter(
   provider: EntityManagerProvider,
-  config: MikroOrmAdapterConfig,
+  adapterOptions?: MikroOrmAdapterOptions,
 ): AdapterFactoryCustomizeAdapterCreator {
-  return ({ getFieldName, options }) => {
+  return ({ getFieldName, options: authOptions }) => {
     const adapter: CustomAdapter = {
       create: async ({ data, model }) => {
         const em = getEntityManager(provider);
@@ -148,7 +140,10 @@ function createOrmAdapter(
 
         const em = getEntityManager(provider);
         const meta = resolveEntity(em, model);
-        const instance = await em.findOne(meta.class, toFilter(em, meta, where, config.provider));
+        const instance = await em.findOne(
+          meta.class,
+          toFilter(em, meta, where, adapterOptions?.provider),
+        );
         if (!instance) return null;
 
         wrap(instance).assign(update as EntityData<EntityRecord>);
@@ -161,7 +156,7 @@ function createOrmAdapter(
         const meta = resolveEntity(em, model);
         return em.nativeUpdate(
           meta.class,
-          toFilter(em, meta, where, config.provider),
+          toFilter(em, meta, where, adapterOptions?.provider),
           update as EntityData<EntityRecord>,
         );
       },
@@ -170,9 +165,13 @@ function createOrmAdapter(
         const { model, where, select, join } = input;
         const em = getEntityManager(provider);
         const meta = resolveEntity(em, model);
-        const instance = await em.findOne(meta.class, toFilter(em, meta, where, config.provider), {
-          disableIdentityMap: true,
-        });
+        const instance = await em.findOne(
+          meta.class,
+          toFilter(em, meta, where, adapterOptions?.provider),
+          {
+            disableIdentityMap: true,
+          },
+        );
         if (!instance) return null;
 
         const result = await attachJoins(em, toPlainObject(instance), join);
@@ -183,12 +182,16 @@ function createOrmAdapter(
         const { model, where, limit, select, sortBy, offset, join } = input;
         const em = getEntityManager(provider);
         const meta = resolveEntity(em, model);
-        const instances = await em.find(meta.class, toFilter(em, meta, where, config.provider), {
-          disableIdentityMap: true,
-          limit,
-          offset,
-          ...(sortBy ? { orderBy: { [sortBy.field]: sortBy.direction } } : {}),
-        });
+        const instances = await em.find(
+          meta.class,
+          toFilter(em, meta, where, adapterOptions?.provider),
+          {
+            disableIdentityMap: true,
+            limit,
+            offset,
+            ...(sortBy ? { orderBy: { [sortBy.field]: sortBy.direction } } : {}),
+          },
+        );
 
         const plainRows = instances.map((instance) => toPlainObject(instance));
         const joinedRows = await attachJoinsMany(em, plainRows, join);
@@ -200,20 +203,22 @@ function createOrmAdapter(
       count: async ({ model, where }) => {
         const em = getEntityManager(provider);
         const meta = resolveEntity(em, model);
-        return em.count(meta.class, toFilter(em, meta, where, config.provider));
+        return em.count(meta.class, toFilter(em, meta, where, adapterOptions?.provider));
       },
 
       createSchema: async ({ tables, file }) =>
         generateMikroOrmSchema({
           tables,
-          file: file ?? config.schemaFile,
-          numericIds: options.advanced?.database?.generateId === "serial",
-          supportsArrays: config.supportsArrays ?? false,
-          supportsBooleans: config.supportsBooleans ?? true,
-          supportsDates: config.supportsDates ?? true,
-          supportsJSON: config.supportsJSON ?? true,
-          casing: config.casing,
-          entityStyle: config.entityStyle,
+          file: file ?? adapterOptions?.schemaFile,
+          numericIds:
+            adapterOptions?.supportsNumericIds ??
+            authOptions.advanced?.database?.generateId === "serial",
+          supportsArrays: adapterOptions?.supportsArrays ?? false,
+          supportsBooleans: adapterOptions?.supportsBooleans ?? true,
+          supportsDates: adapterOptions?.supportsDates ?? true,
+          supportsJSON: adapterOptions?.supportsJSON ?? true,
+          casing: adapterOptions?.casing,
+          entityStyle: adapterOptions?.entityStyle,
         }),
 
       delete: async ({ model, where }) => {
@@ -221,7 +226,10 @@ function createOrmAdapter(
 
         const em = getEntityManager(provider);
         const meta = resolveEntity(em, model);
-        const instance = await em.findOne(meta.class, toFilter(em, meta, where, config.provider));
+        const instance = await em.findOne(
+          meta.class,
+          toFilter(em, meta, where, adapterOptions?.provider),
+        );
         if (!instance) return;
 
         em.remove(instance);
@@ -231,7 +239,7 @@ function createOrmAdapter(
       deleteMany: async ({ model, where }) => {
         const em = getEntityManager(provider);
         const meta = resolveEntity(em, model);
-        return em.nativeDelete(meta.class, toFilter(em, meta, where, config.provider));
+        return em.nativeDelete(meta.class, toFilter(em, meta, where, adapterOptions?.provider));
       },
 
       consumeOne: async <T>(input: ConsumeOneInput) => {
@@ -241,12 +249,12 @@ function createOrmAdapter(
         const em = getEntityManager(provider);
         const meta = resolveEntity(em, model);
         const executeConsume = async (transaction: EntityManager) => {
-          const transformedWhere = toFilter(transaction, meta, where, config.provider);
+          const transformedWhere = toFilter(transaction, meta, where, adapterOptions?.provider);
           const instance = await findOneForMutation(
             transaction,
             meta.class,
             transformedWhere,
-            config.provider,
+            adapterOptions?.provider,
           );
           if (!instance) return null;
 
@@ -257,7 +265,7 @@ function createOrmAdapter(
           return affected === 1 ? (result as T) : null;
         };
 
-        if (isMongo(em, config.provider)) {
+        if (isMongo(em, adapterOptions?.provider)) {
           return executeConsume(em);
         }
 
@@ -271,12 +279,12 @@ function createOrmAdapter(
         const em = getEntityManager(provider);
         const meta = resolveEntity(em, model);
         const executeIncrement = async (transaction: EntityManager) => {
-          const transformedWhere = toFilter(transaction, meta, where, config.provider);
+          const transformedWhere = toFilter(transaction, meta, where, adapterOptions?.provider);
           const instance = await findOneForMutation(
             transaction,
             meta.class,
             transformedWhere,
-            config.provider,
+            adapterOptions?.provider,
           );
           if (!instance) return null;
 
@@ -313,7 +321,7 @@ function createOrmAdapter(
               );
             }
 
-            if (isMongo(transaction, config.provider)) {
+            if (isMongo(transaction, adapterOptions?.provider)) {
               const current = instance[property.name];
               if (typeof current !== "number") {
                 throw new TypeError(`Cannot increment non-numeric field "${field}" on "${model}".`);
@@ -341,7 +349,7 @@ function createOrmAdapter(
           return (updated ? toPlainObject(updated) : null) as T;
         };
 
-        if (isMongo(em, config.provider)) {
+        if (isMongo(em, adapterOptions?.provider)) {
           return executeIncrement(em);
         }
 
@@ -353,20 +361,20 @@ function createOrmAdapter(
   };
 }
 
-export function mikroOrmAdapter(config: MikroOrmAdapterConfig) {
+export function mikroOrmAdapter(em: EntityManagerProvider, options?: MikroOrmAdapterOptions) {
   let betterAuthOptions: BetterAuthOptions | undefined;
   const baseConfig: AdapterFactoryOptions["config"] = {
     adapterId: "mikro-orm",
     adapterName: "MikroORM Adapter",
-    debugLogs: config.debugLogs ?? false,
-    usePlural: config.usePlural ?? false,
-    supportsJSON: config.supportsJSON ?? true,
-    supportsDates: config.supportsDates ?? true,
-    supportsBooleans: config.supportsBooleans ?? true,
-    supportsArrays: config.supportsArrays ?? false,
-    supportsNumericIds: config.supportsNumericIds ?? true,
+    debugLogs: options?.debugLogs ?? false,
+    usePlural: options?.usePlural ?? false,
+    supportsJSON: options?.supportsJSON ?? true,
+    supportsDates: options?.supportsDates ?? true,
+    supportsBooleans: options?.supportsBooleans ?? true,
+    supportsArrays: options?.supportsArrays ?? false,
+    supportsNumericIds: options?.supportsNumericIds ?? true,
     transaction:
-      config.transactions === false
+      options?.transactions === false
         ? false
         : async (callback) => {
             if (!betterAuthOptions) {
@@ -374,25 +382,25 @@ export function mikroOrmAdapter(config: MikroOrmAdapterConfig) {
                 "The MikroORM adapter has not been initialized by Better Auth.",
               );
             }
-            const options = betterAuthOptions;
+            const authOptions = betterAuthOptions;
 
-            return getEntityManager(config.em).transactional(async (transaction) => {
+            return getEntityManager(em).transactional(async (transaction) => {
               const transactionFactory = createAdapterFactory({
                 config: { ...baseConfig, transaction: false },
-                adapter: createOrmAdapter(transaction, config),
+                adapter: createOrmAdapter(transaction, options),
               });
-              return callback(transactionFactory(options));
+              return callback(transactionFactory(authOptions));
             });
           },
   };
 
   const factory = createAdapterFactory({
     config: baseConfig,
-    adapter: createOrmAdapter(config.em, config),
+    adapter: createOrmAdapter(em, options),
   });
 
-  return (options: BetterAuthOptions) => {
-    betterAuthOptions = options;
-    return factory(options);
+  return (authOptions: BetterAuthOptions) => {
+    betterAuthOptions = authOptions;
+    return factory(authOptions);
   };
 }

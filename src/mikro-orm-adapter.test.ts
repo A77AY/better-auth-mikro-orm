@@ -119,8 +119,8 @@ describe("mikroOrmAdapter", () => {
     await orm?.close(true);
   });
 
-  function createAdapter() {
-    return mikroOrmAdapter({ em: () => orm.em.fork() })(betterAuthOptions);
+  function createAdapter(options?: Parameters<typeof mikroOrmAdapter>[1]) {
+    return mikroOrmAdapter(() => orm.em.fork(), options)(betterAuthOptions);
   }
 
   async function createUser(
@@ -343,22 +343,51 @@ describe("mikroOrmAdapter", () => {
     ).rejects.toThrow("Field nonExistentField not found in model user");
   });
 
+  test("supports direct MikroORM instance", async () => {
+    const directAdapter = mikroOrmAdapter(orm)(betterAuthOptions);
+    await createUser(directAdapter, "direct-orm-user");
+    const user = await directAdapter.findOne<UserRecord>({
+      model: "user",
+      where: [{ field: "id", value: "direct-orm-user" }],
+    });
+    expect(user).toMatchObject({ id: "direct-orm-user" });
+  });
+
+  test("supports direct EntityManager instance", async () => {
+    const directAdapter = mikroOrmAdapter(orm.em.fork())(betterAuthOptions);
+    await createUser(directAdapter, "direct-em-user");
+    const user = await directAdapter.findOne<UserRecord>({
+      model: "user",
+      where: [{ field: "id", value: "direct-em-user" }],
+    });
+    expect(user).toMatchObject({ id: "direct-em-user" });
+  });
+
+  test("supports EntityManager with additional options", async () => {
+    const directWithConfig = mikroOrmAdapter(orm.em.fork(), { provider: "sqlite" })(
+      betterAuthOptions,
+    );
+    await createUser(directWithConfig, "direct-config-user");
+    const user = await directWithConfig.findOne<UserRecord>({
+      model: "user",
+      where: [{ field: "id", value: "direct-config-user" }],
+    });
+    expect(user).toMatchObject({ id: "direct-config-user" });
+  });
+
   test("supports dynamic EntityManager getter function", async () => {
     let callCount = 0;
-    const dynamicAdapter = mikroOrmAdapter({
-      em: () => {
-        callCount++;
-        return orm.em.fork();
-      },
+    const dynamicAdapter = mikroOrmAdapter(() => {
+      callCount++;
+      return orm.em.fork();
     })(betterAuthOptions);
 
     await createUser(dynamicAdapter, "dynamic-user");
     expect(callCount).toBeGreaterThan(0);
   });
 
-  test("supports explicit provider config option", async () => {
-    const customAdapter = mikroOrmAdapter({
-      em: () => orm.em.fork(),
+  test("supports explicit provider option", async () => {
+    const customAdapter = mikroOrmAdapter(() => orm.em.fork(), {
       provider: "sqlite",
     })(betterAuthOptions);
 

@@ -45,17 +45,14 @@ bun add @a77ay/better-auth-mikro-orm @mikro-orm/core
 ```typescript
 import { betterAuth } from "better-auth";
 import { mikroOrmAdapter } from "@a77ay/better-auth-mikro-orm";
-import { RequestContext } from "@mikro-orm/core";
 import { orm } from "./mikro-orm.config";
 
 export const auth = betterAuth({
-  database: mikroOrmAdapter({
-    // Provide an EntityManager or a getter returning the request-scoped EntityManager
-    em: () => RequestContext.getEntityManager() ?? orm.em,
-    schemaFile: "src/entities/auth.ts",
-  }),
+  database: mikroOrmAdapter(orm),
 });
 ```
+
+Pass your `MikroORM` instance, `EntityManager`, or a getter function. When passing `orm`, the adapter automatically uses `RequestContext.getEntityManager()` per HTTP request and falls back to `orm.em` for CLI commands and background scripts.
 
 Every Better Auth model must be registered as a MikroORM entity. Its `tableName` must match the
 corresponding Better Auth model name (including configured model renames or pluralization). The
@@ -69,12 +66,11 @@ and updating the database schema.
 
 #### Configuring Generator Options
 
-Options such as `entityStyle`, `casing`, and the default `schemaFile` path are configured directly inside `mikroOrmAdapter` in your auth configuration:
+Options such as `entityStyle`, `casing`, and the default `schemaFile` path are configured directly in `mikroOrmAdapter`:
 
 ```typescript
 export const auth = betterAuth({
-  database: mikroOrmAdapter({
-    em: () => RequestContext.getEntityManager() ?? orm.em,
+  database: mikroOrmAdapter(orm, {
     entityStyle: "define-entity", // "define-entity" (default) | "decorators"
     casing: "snake_case", // "snake_case" | "camelCase" (default)
     schemaFile: "src/entities/auth.ts", // Default output path
@@ -121,16 +117,22 @@ After generating, use MikroORM's migration tooling to create and apply the datab
 
 ## Configuration Options
 
-| Option         | Type                                     | Default                  | Description                                                                             |
-| -------------- | ---------------------------------------- | ------------------------ | --------------------------------------------------------------------------------------- |
-| `em`           | `EntityManager \| (() => EntityManager)` | **Required**             | MikroORM `EntityManager` or a getter returning the request-scoped instance.             |
-| `provider`     | `DatabaseProvider`                       | Auto-detected            | Database provider (`"postgresql"`, `"sqlite"`, `"mysql"`, `"mongodb"`, or custom).      |
-| `casing`       | `"snake_case" \| "camelCase"`            | `"camelCase"`            | Naming convention for generated database columns.                                       |
-| `entityStyle`  | `"define-entity" \| "decorators"`        | `"define-entity"`        | Entity definition style (`defineEntity` fluent schema or `@Entity()` class decorators). |
-| `schemaFile`   | `string`                                 | `"src/entities/auth.ts"` | Default output file path for CLI schema generation.                                     |
-| `debugLogs`    | `boolean \| DBAdapterDebugLogOption`     | `false`                  | Enable Better Auth adapter debug logging.                                               |
-| `usePlural`    | `boolean`                                | `false`                  | Use plural table names for generated entities.                                          |
-| `transactions` | `boolean`                                | `true`                   | Whether to execute multi-operation callbacks in a transaction.                          |
+The `mikroOrmAdapter` accepts the database instance or getter as its first argument and an optional `options` object as its second argument:
+
+```typescript
+mikroOrmAdapter(em, options?)
+```
+
+| Parameter / Option | Type                                                 | Default                  | Description                                                                             |
+| ------------------ | ---------------------------------------------------- | ------------------------ | --------------------------------------------------------------------------------------- |
+| `em` (1st arg)     | `MikroORM \| EntityManager \| (() => EntityManager)` | **Required**             | MikroORM instance, `EntityManager`, or getter returning the request-scoped instance.    |
+| `provider`         | `DatabaseProvider`                                   | Auto-detected            | Database provider (`"postgresql"`, `"sqlite"`, `"mysql"`, `"mongodb"`, or custom).      |
+| `casing`           | `"snake_case" \| "camelCase"`                        | `"camelCase"`            | Naming convention for generated database columns.                                       |
+| `entityStyle`      | `"define-entity" \| "decorators"`                    | `"define-entity"`        | Entity definition style (`defineEntity` fluent schema or `@Entity()` class decorators). |
+| `schemaFile`       | `string`                                             | `"src/entities/auth.ts"` | Default output file path for CLI schema generation.                                     |
+| `debugLogs`        | `boolean \| DBAdapterDebugLogOption`                 | `false`                  | Enable Better Auth adapter debug logging.                                               |
+| `usePlural`        | `boolean`                                            | `false`                  | Use plural table names for generated entities.                                          |
+| `transactions`     | `boolean`                                            | `true`                   | Whether to execute multi-operation callbacks in a transaction.                          |
 
 ### Entity Styles
 
@@ -141,8 +143,7 @@ The generator supports two entity definition styles:
 
 ```typescript
 export const auth = betterAuth({
-  database: mikroOrmAdapter({
-    em: () => RequestContext.getEntityManager() ?? orm.em,
+  database: mikroOrmAdapter(orm, {
     entityStyle: "define-entity", // "define-entity" | "decorators"
     casing: "snake_case", // "snake_case" | "camelCase"
   }),

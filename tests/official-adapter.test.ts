@@ -54,7 +54,7 @@ async function initOrm(options: BetterAuthOptions): Promise<MikroORM> {
 }
 
 const { execute } = await testAdapter({
-  adapter: () => mikroOrmAdapter({ em: () => getOrm().em.fork() }),
+  adapter: () => mikroOrmAdapter(() => getOrm().em.fork()),
   runMigrations: async (options) => {
     await orm?.close(true);
     orm = await initOrm(options);

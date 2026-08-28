@@ -149,8 +149,7 @@ describe("generateMikroOrmSchema", () => {
     const options = {
       advanced: { database: { generateId: "serial" } },
     } satisfies BetterAuthOptions;
-    const adapter = mikroOrmAdapter({
-      em: null as never,
+    const adapter = mikroOrmAdapter(null as never, {
       schemaFile: "src/entities/auth.ts",
     })(options);
 

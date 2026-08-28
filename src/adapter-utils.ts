@@ -1,16 +1,18 @@
 import {
   LockMode,
+  RequestContext,
   wrap,
   type EntityManager,
   type EntityMetadata,
   type EntityName,
   type FilterQuery,
+  type MikroORM,
 } from "@mikro-orm/core";
 import { BetterAuthError } from "better-auth";
 import { transformWhere } from "./where";
 
 export type EntityRecord = Record<string, unknown>;
-export type EntityManagerProvider = EntityManager | (() => EntityManager);
+export type EntityManagerProvider = EntityManager | MikroORM | (() => EntityManager | MikroORM);
 export type DatabaseProvider =
   | "postgresql"
   | "postgres"
@@ -23,7 +25,17 @@ export type DatabaseProvider =
   | (string & {});
 
 export function getEntityManager(provider: EntityManagerProvider): EntityManager {
-  return typeof provider === "function" ? provider() : provider;
+  const target = typeof provider === "function" ? provider() : provider;
+
+  if (target && typeof target === "object" && "em" in target && target.em) {
+    const orm = target as { em: EntityManager };
+    return (
+      RequestContext.getEntityManager() ??
+      (typeof orm.em.fork === "function" ? orm.em.fork() : orm.em)
+    );
+  }
+
+  return target as EntityManager;
 }
 
 export function resolveEntity(em: EntityManager, model: string): EntityMetadata<EntityRecord> {

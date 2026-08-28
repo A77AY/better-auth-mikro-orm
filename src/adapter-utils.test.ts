@@ -1,5 +1,5 @@
-import type { EntityManager, EntityMetadata } from "@mikro-orm/core";
-import { LockMode } from "@mikro-orm/core";
+import type { EntityManager, EntityMetadata, MikroORM } from "@mikro-orm/core";
+import { LockMode, RequestContext } from "@mikro-orm/core";
 import { describe, expect, test, vi } from "vite-plus/test";
 import {
   findOneForMutation,
@@ -19,11 +19,35 @@ describe("adapter-utils", () => {
       expect(getEntityManager(mockEm)).toBe(mockEm);
     });
 
+    test("returns forked orm.em when passed a MikroORM instance", () => {
+      const forkedEm = {} as EntityManager;
+      const fork = vi.fn(() => forkedEm);
+      const mockOrm = { em: { fork } } as unknown as MikroORM;
+      expect(getEntityManager(mockOrm)).toBe(forkedEm);
+      expect(fork).toHaveBeenCalledTimes(1);
+    });
+
     test("invokes getter function to return EntityManager", () => {
       const mockEm = {} as EntityManager;
       const getter = vi.fn(() => mockEm);
       expect(getEntityManager(getter)).toBe(mockEm);
       expect(getter).toHaveBeenCalledTimes(1);
+    });
+
+    test("prefers active RequestContext for MikroORM instance but preserves explicit EntityManager", async () => {
+      const scopedEm = {
+        name: "default",
+        fork: () => scopedEm,
+        getContext: () => scopedEm,
+      } as unknown as EntityManager;
+      const explicitEm = {} as EntityManager;
+      const mockOrm = { em: { fork: () => ({}) as EntityManager } } as unknown as MikroORM;
+
+      await RequestContext.create(scopedEm, async () => {
+        expect(getEntityManager(mockOrm)).toBe(scopedEm);
+        expect(getEntityManager(explicitEm)).toBe(explicitEm);
+        expect(getEntityManager(() => explicitEm)).toBe(explicitEm);
+      });
     });
   });
 
