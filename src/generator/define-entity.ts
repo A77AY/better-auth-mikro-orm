@@ -36,30 +36,29 @@ function renderDefineProperty(
 
     chains.push(`p.manyToOne(${targetModel})`);
     chains.push("mapToPk()");
-    chains.push(`fieldName(${quote(databaseName)})`);
-    chains.push(`referenceColumnName(${quote(referencedDatabaseName)})`);
+    if (databaseName !== propertyName) chains.push(`fieldName(${quote(databaseName)})`);
+    if (referencedDatabaseName !== "id") {
+      chains.push(`referenceColumnName(${quote(referencedDatabaseName)})`);
+    }
     if (reference.field !== "id") chains.push(`targetKey(${quote(referencedProperty)})`);
     chains.push(`deleteRule(${quote(reference.onDelete ?? "cascade")})`);
   } else if (Array.isArray(field.type)) {
     chains.push(`p.enum(${stringArray(field.type)})`);
-    chains.push(`fieldName(${quote(databaseName)})`);
   } else if (field.type === "date") {
     chains.push(options.supportsDates === false ? "p.string()" : "p.datetime()");
-    chains.push(`fieldName(${quote(databaseName)})`);
   } else if (field.type === "boolean") {
     chains.push(options.supportsBooleans === false ? "p.integer()" : "p.boolean()");
-    chains.push(`fieldName(${quote(databaseName)})`);
   } else if (field.type === "number") {
     chains.push(field.bigint ? 'p.bigint("number")' : "p.integer()");
-    chains.push(`fieldName(${quote(databaseName)})`);
   } else if (field.type === "json") {
     chains.push(options.supportsJSON === false ? "p.text()" : "p.json()");
-    chains.push(`fieldName(${quote(databaseName)})`);
   } else if (field.type === "string[]" || field.type === "number[]") {
     chains.push(options.supportsArrays ? "p.array()" : "p.text()");
-    chains.push(`fieldName(${quote(databaseName)})`);
   } else {
     chains.push(field.sortable || field.index || field.unique ? "p.string()" : "p.text()");
+  }
+
+  if (databaseName !== propertyName && (!reference || !referencedEntry)) {
     chains.push(`fieldName(${quote(databaseName)})`);
   }
 
@@ -108,8 +107,8 @@ function renderDefineEntity(
 ) {
   const modelName = modelNames.get(defaultModel)!;
   const idChain = options.numericIds
-    ? 'p.integer().primary().fieldName("id").autoincrement()'
-    : 'p.string().primary().fieldName("id")';
+    ? "p.integer().primary().autoincrement()"
+    : "p.string().primary()";
   const properties = Object.entries(table.fields).map(([fieldName, field]) =>
     renderDefineProperty(fieldName, field, entries, modelNames, options),
   );

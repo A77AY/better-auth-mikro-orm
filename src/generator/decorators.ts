@@ -34,12 +34,12 @@ function renderDecoratorProperty(
       ? databasePropertyName(reference.field, referencedField, options)
       : reference.field;
     const targetModel = modelNames.get(referencedModel)!;
-    const opts: string[] = [
-      "mapToPk: true",
-      `fieldName: ${quote(databaseName)}`,
-      `referenceColumnName: ${quote(referencedDatabaseName)}`,
-      `deleteRule: ${quote(reference.onDelete ?? "cascade")}`,
-    ];
+    const opts: string[] = ["mapToPk: true"];
+    if (databaseName !== propertyName) opts.push(`fieldName: ${quote(databaseName)}`);
+    if (referencedDatabaseName !== "id") {
+      opts.push(`referenceColumnName: ${quote(referencedDatabaseName)}`);
+    }
+    opts.push(`deleteRule: ${quote(reference.onDelete ?? "cascade")}`);
     if (reference.field !== "id") opts.push(`targetKey: ${quote(referencedProperty)}`);
     if (field.required === false) opts.push("nullable: true");
 
@@ -48,10 +48,8 @@ function renderDecoratorProperty(
   }
 
   if (Array.isArray(field.type)) {
-    const opts: string[] = [
-      `items: () => ${stringArray(field.type)}`,
-      `fieldName: ${quote(databaseName)}`,
-    ];
+    const opts: string[] = [`items: () => ${stringArray(field.type)}`];
+    if (databaseName !== propertyName) opts.push(`fieldName: ${quote(databaseName)}`);
     if (field.required === false) opts.push("nullable: true");
     if (typeof field.defaultValue === "string") {
       opts.push(`default: ${quote(field.defaultValue)}`);
@@ -65,7 +63,8 @@ function renderDecoratorProperty(
   }
 
   const type = scalarType(field, options);
-  const opts: string[] = [`type: ${quote(type.mikroOrm)}`, `fieldName: ${quote(databaseName)}`];
+  const opts: string[] = [`type: ${quote(type.mikroOrm)}`];
+  if (databaseName !== propertyName) opts.push(`fieldName: ${quote(databaseName)}`);
   if (field.bigint) opts.push('runtimeType: "number"');
   if (field.required === false) opts.push("nullable: true");
   if (field.unique) opts.push("unique: true");
@@ -127,9 +126,7 @@ function renderDecoratorEntity(
 ) {
   const modelName = modelNames.get(defaultModel)!;
   const idType = options.numericIds ? "number" : "string";
-  const pkOptions = options.numericIds
-    ? '{ autoincrement: true, fieldName: "id" }'
-    : '{ fieldName: "id" }';
+  const pkDecorator = options.numericIds ? "@PrimaryKey({ autoincrement: true })" : "@PrimaryKey()";
   const classIndexes = renderClassIndexes(table);
   const properties = Object.entries(table.fields).map(([fieldName, field]) =>
     renderDecoratorProperty(fieldName, field, entries, modelNames, options),
@@ -137,7 +134,7 @@ function renderDecoratorEntity(
 
   return `${classIndexes}@Entity({ tableName: ${quote(table.modelName)} })
 export class ${modelName} {
-  @PrimaryKey(${pkOptions})
+  ${pkDecorator}
   id!: ${idType};
 
 ${properties.join("\n\n")}

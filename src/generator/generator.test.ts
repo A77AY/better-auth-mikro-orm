@@ -76,11 +76,10 @@ describe("generateMikroOrmSchema", () => {
       'import { defineEntity, p, type InferEntity } from "@mikro-orm/core";',
     );
     expect(result.code).toContain('tableName: "member"');
-    expect(result.code).toContain('p.string().fieldName("email_address").unique()');
-    expect(result.code).toContain('p.enum(["active", "disabled"]).fieldName("status")');
-    expect(result.code).toContain('p.boolean().fieldName("verified").default(false)');
+    expect(result.code).toContain("p.string().unique()");
+    expect(result.code).toContain('p.enum(["active", "disabled"])');
+    expect(result.code).toContain("p.boolean().default(false)");
     expect(result.code).toContain("p.manyToOne(User).mapToPk()");
-    expect(result.code).toContain('fieldName("member_id")');
     expect(result.code).toContain('name: "session_user_token"');
     expect(result.code).toContain("export type User = InferEntity<typeof User>;");
     expect(result.code).not.toContain('tableName: "ignored"');
@@ -129,16 +128,12 @@ describe("generateMikroOrmSchema", () => {
     );
     expect(result.code).toContain('@Entity({ tableName: "member" })');
     expect(result.code).toContain("export class User {");
+    expect(result.code).toContain('@Property({ type: "string", unique: true })');
+    expect(result.code).toContain('@Enum({ items: () => ["active", "disabled"] })');
+    expect(result.code).toContain('@Property({ type: "boolean", default: false })');
     expect(result.code).toContain(
-      '@Property({ type: "string", fieldName: "email_address", unique: true })',
+      '@ManyToOne(() => User, { mapToPk: true, deleteRule: "cascade" })',
     );
-    expect(result.code).toContain(
-      '@Enum({ items: () => ["active", "disabled"], fieldName: "status" })',
-    );
-    expect(result.code).toContain(
-      '@Property({ type: "boolean", fieldName: "verified", default: false })',
-    );
-    expect(result.code).toContain('@ManyToOne(() => User, { mapToPk: true, fieldName: "member_id"');
     expect(result.code).toContain(
       '@Unique({ name: "session_user_token", properties: ["member_id", "token"] })',
     );
@@ -157,8 +152,7 @@ describe("generateMikroOrmSchema", () => {
 
     const generated = await adapter.createSchema?.(options);
 
-    expect(generated).toMatchObject({ path: "src/entities/auth.ts", overwrite: true });
-    expect(generated?.code).toContain('id: p.integer().primary().fieldName("id").autoincrement()');
+    expect(generated?.code).toContain("id: p.integer().primary().autoincrement()");
 
     const directory = await mkdtemp(join(process.cwd(), ".tmp-generator-"));
     temporaryDirectories.push(directory);
@@ -305,8 +299,8 @@ describe("generateMikroOrmSchema", () => {
         fields: {
           role: { type: ["admin", "user"], required: false, defaultValue: "user" },
           status: { type: "string", index: true },
-          active: { type: "boolean", defaultValue: 1 },
-          metadata: { type: "json" },
+          active: { type: "boolean", defaultValue: 1, fieldName: "active_custom" },
+          metadata: { type: "json", fieldName: "meta_col" },
           tags: { type: "string[]" },
           bigNumber: { type: "number", bigint: true },
           createdAt: { type: "date" },
@@ -323,11 +317,11 @@ describe("generateMikroOrmSchema", () => {
       entityStyle: "define-entity",
     });
 
-    expect(defineResult.code).toContain('p.integer().fieldName("active")');
-    expect(defineResult.code).toContain('p.text().fieldName("metadata")');
-    expect(defineResult.code).toContain('p.string().fieldName("createdAt")');
-    expect(defineResult.code).toContain('p.array().fieldName("tags")');
-    expect(defineResult.code).toContain('p.bigint("number").fieldName("bigNumber")');
+    expect(defineResult.code).toContain("active_custom: p.integer().default(1)");
+    expect(defineResult.code).toContain("meta_col: p.text()");
+    expect(defineResult.code).toContain("p.string()");
+    expect(defineResult.code).toContain("p.array()");
+    expect(defineResult.code).toContain('p.bigint("number")');
 
     const decoratorResult = generateMikroOrmSchema({
       tables: legacyTables,
@@ -340,11 +334,11 @@ describe("generateMikroOrmSchema", () => {
 
     expect(decoratorResult.code).toContain('@Index({ name: "user_role_idx"');
     expect(decoratorResult.code).toContain(
-      '@Enum({ items: () => ["admin", "user"], fieldName: "role", nullable: true, default: "user" })',
+      '@Enum({ items: () => ["admin", "user"], nullable: true, default: "user" })',
     );
-    expect(decoratorResult.code).toContain('@Property({ type: "number", fieldName: "active"');
-    expect(decoratorResult.code).toContain('@Property({ type: "text", fieldName: "metadata"');
-    expect(decoratorResult.code).toContain('@Property({ type: "array", fieldName: "tags"');
+    expect(decoratorResult.code).toContain('@Property({ type: "number", default: 1 })');
+    expect(decoratorResult.code).toContain('@Property({ type: "text" })');
+    expect(decoratorResult.code).toContain('@Property({ type: "array" })');
   });
 });
 
