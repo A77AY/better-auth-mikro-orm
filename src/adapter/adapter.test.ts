@@ -1,11 +1,11 @@
 import { EntitySchema, type MikroORM } from "@mikro-orm/core";
-import { MikroORM as SqliteMikroORM } from "@mikro-orm/sqlite";
-import { MikroORM as PostgreSqlMikroORM } from "@mikro-orm/postgresql";
 import { MikroORM as MongoMikroORM } from "@mikro-orm/mongodb";
+import { MikroORM as PostgreSqlMikroORM } from "@mikro-orm/postgresql";
+import { MikroORM as SqliteMikroORM } from "@mikro-orm/sqlite";
 import type { BetterAuthOptions } from "better-auth";
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vite-plus/test";
-import { mikroOrmAdapter } from "./index";
-import { isMongo } from "./adapter-utils";
+import { mikroOrmAdapter } from "./adapter";
+import { isMongo } from "./utils";
 
 class UserRecord {
   id!: string;

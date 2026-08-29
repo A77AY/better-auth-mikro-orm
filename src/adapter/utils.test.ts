@@ -10,7 +10,7 @@ import {
   supportsPessimisticLock,
   toFilter,
   type EntityRecord,
-} from "./adapter-utils";
+} from "./utils";
 
 describe("adapter-utils", () => {
   describe("getEntityManager", () => {

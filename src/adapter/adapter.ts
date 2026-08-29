@@ -7,6 +7,9 @@ import {
   type CustomAdapter,
   type DBAdapterDebugLogOption,
 } from "better-auth/adapters";
+import { generateMikroOrmSchema, type EntityStyle, type SchemaCasing } from "../generator";
+import { attachJoins, attachJoinsMany, selectFields } from "./joins";
+import { attachGeneratorOptions } from "./options";
 import {
   findOneForMutation,
   findProperty,
@@ -19,10 +22,7 @@ import {
   type DatabaseProvider,
   type EntityManagerProvider,
   type EntityRecord,
-} from "./adapter-utils";
-import { generateMikroOrmSchema, type EntityStyle, type SchemaCasing } from "./generator";
-import { attachGeneratorOptions } from "./generator-options";
-import { attachJoins, attachJoinsMany, selectFields } from "./joins";
+} from "./utils";
 
 type FindOneInput = Parameters<CustomAdapter["findOne"]>[0];
 type FindManyInput = Parameters<CustomAdapter["findMany"]>[0];

@@ -1,4 +1,4 @@
-import type { MikroOrmAdapterOptions } from "./mikro-orm-adapter";
+import type { MikroOrmAdapterOptions } from "./adapter";
 
 const generatorOptions = Symbol.for("@a77ay/better-auth-mikro-orm/generator-options");
 

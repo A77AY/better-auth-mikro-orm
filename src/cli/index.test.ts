@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, describe, expect, test } from "vite-plus/test";
-import { runCli } from "./cli-command";
+import { runCli } from "./index";
 
 const temporaryDirectories: string[] = [];
 

@@ -6,7 +6,9 @@ import { MikroORM } from "@mikro-orm/sqlite";
 import type { BetterAuthOptions } from "better-auth";
 import type { BetterAuthDBSchema } from "better-auth/db";
 import { afterEach, describe, expect, test } from "vite-plus/test";
-import { generateMikroOrmSchema, mikroOrmAdapter, writeMikroOrmSchemaDirectory } from "./index";
+import { mikroOrmAdapter } from "../adapter";
+import { generateMikroOrmSchema } from "./generator";
+import { writeMikroOrmSchemaDirectory } from "./directory";
 
 const temporaryDirectories: string[] = [];
 

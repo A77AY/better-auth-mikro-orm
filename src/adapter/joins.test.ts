@@ -1,7 +1,7 @@
 import type { EntityManager, EntityMetadata } from "@mikro-orm/core";
 import { describe, expect, test, vi } from "vite-plus/test";
 import { attachJoins, attachJoinsMany, selectFields } from "./joins";
-import type { EntityRecord } from "./adapter-utils";
+import type { EntityRecord } from "./utils";
 
 describe("joins", () => {
   describe("selectFields", () => {

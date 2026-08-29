@@ -1,8 +1,23 @@
-export { generateMikroOrmSchema } from "./generator";
 export {
+  attachGeneratorOptions,
+  getEntityManager,
+  mikroOrmAdapter,
+  readGeneratorOptions,
+  resolveEntity,
+} from "./adapter";
+export type {
+  DatabaseProvider,
+  EntityManagerProvider,
+  EntityRecord,
+  MikroOrmAdapterOptions,
+} from "./adapter";
+export { runCli } from "./cli/index";
+export type { CliIO } from "./cli/index";
+export {
+  generateMikroOrmSchema,
   generateMikroOrmSchemaDirectory,
   writeMikroOrmSchemaDirectory,
-} from "./directory-generator";
+} from "./generator";
 export type {
   EntityStyle,
   GeneratedSchemaDirectory,
@@ -10,6 +25,3 @@ export type {
   MikroOrmSchemaGeneratorOptions,
   SchemaCasing,
 } from "./generator";
-export { mikroOrmAdapter } from "./mikro-orm-adapter";
-export type { MikroOrmAdapterOptions } from "./mikro-orm-adapter";
-export type { DatabaseProvider, EntityManagerProvider } from "./adapter-utils";

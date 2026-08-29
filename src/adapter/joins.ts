@@ -1,6 +1,6 @@
 import type { EntityManager, FilterQuery } from "@mikro-orm/core";
 import type { JoinConfig } from "better-auth/adapters";
-import { resolveEntity, toPlainObject, type EntityRecord } from "./adapter-utils";
+import { resolveEntity, toPlainObject, type EntityRecord } from "./utils";
 
 /**
  * Fetch and attach joined relations (1:1 and 1:M) to a single entity record.

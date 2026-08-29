@@ -1,8 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { generateDecoratorFiles } from "./generators/decorators";
-import { generateDefineEntityFiles } from "./generators/define-entity";
-import type { GeneratedSchemaDirectory, MikroOrmSchemaGeneratorOptions } from "./generators/types";
+import { generateDecoratorFiles } from "./decorators";
+import { generateDefineEntityFiles } from "./define-entity";
+import type { GeneratedSchemaDirectory, MikroOrmSchemaGeneratorOptions } from "./types";
 
 export function generateMikroOrmSchemaDirectory(
   options: MikroOrmSchemaGeneratorOptions,

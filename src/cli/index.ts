@@ -4,12 +4,13 @@ import { parseArgs } from "node:util";
 import type { BetterAuthOptions } from "better-auth";
 import { getAuthTables } from "better-auth/db";
 import { createJiti } from "jiti";
+import { readGeneratorOptions } from "../adapter";
 import {
   generateMikroOrmSchemaDirectory,
   writeMikroOrmSchemaDirectory,
-} from "./directory-generator";
-import { readGeneratorOptions } from "./generator-options";
-import type { EntityStyle, SchemaCasing } from "./generator";
+  type EntityStyle,
+  type SchemaCasing,
+} from "../generator";
 
 const help = `better-auth-mikro-orm
 

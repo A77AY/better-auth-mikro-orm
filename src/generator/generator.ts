@@ -1,13 +1,13 @@
 import type { DBAdapterSchemaCreation } from "better-auth/adapters";
-import { generateDecoratorsSchema } from "./generators/decorators";
-import { generateDefineEntitySchema } from "./generators/define-entity";
+import { generateDecoratorsSchema } from "./decorators";
+import { generateDefineEntitySchema } from "./define-entity";
 import type {
   EntityStyle,
   GeneratedSchemaDirectory,
   GeneratedSchemaFile,
   MikroOrmSchemaGeneratorOptions,
   SchemaCasing,
-} from "./generators/types";
+} from "./types";
 
 export type {
   EntityStyle,
