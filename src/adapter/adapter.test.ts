@@ -418,4 +418,24 @@ describe("mikroOrmAdapter", () => {
       'No MikroORM entity is registered for Better Auth model "verification"',
     );
   });
+
+  test("throws TypeError when incrementing non-numeric field on MongoDB", async () => {
+    const mongoAdapter = mikroOrmAdapter(() => orm.em.fork(), { provider: "mongodb" })(
+      betterAuthOptions,
+    );
+    await createUser(mongoAdapter, "str-user", { role: "admin" as never });
+
+    await expect(
+      mongoAdapter.incrementOne({
+        model: "user",
+        where: [{ field: "id", value: "str-user" }],
+        increment: { role: 1 as never },
+      }),
+    ).rejects.toThrow('Cannot increment non-numeric field "role" on "user"');
+  });
+
+  test("supports creating adapter factory before initialization", () => {
+    const factory = mikroOrmAdapter(orm.em, { transactions: true });
+    expect(typeof factory).toBe("function");
+  });
 });

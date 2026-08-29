@@ -105,13 +105,39 @@ describe("joins", () => {
         find,
       } as unknown as EntityManager;
 
-      const users = [{ id: "u-1" }, { id: "u-2" }];
+      const users = [{ id: "u-1" }, { id: "u-2" }, { id: null }];
 
-      await attachJoinsMany(mockEm, users, {
+      const results = await attachJoinsMany(mockEm, users, {
         session: { on: { from: "id", to: "userId" }, relation: "one-to-many", limit: 1 },
       });
 
       expect(find).toHaveBeenCalledTimes(2);
+      expect(results[2].session).toEqual([]);
+    });
+
+    test("handles all null source values gracefully without database query", async () => {
+      const findMock = vi.fn();
+      const mockEm = {
+        find: findMock,
+      } as unknown as EntityManager;
+
+      const users = [{ id: null }, { id: undefined }];
+      const joined1To1 = await attachJoinsMany(mockEm, users, {
+        session: { on: { from: "id", to: "userId" }, relation: "one-to-one" },
+      });
+      expect(joined1To1).toEqual([
+        { id: null, session: null },
+        { id: undefined, session: null },
+      ]);
+      expect(findMock).not.toHaveBeenCalled();
+
+      const joined1ToM = await attachJoinsMany(mockEm, users, {
+        session: { on: { from: "id", to: "userId" }, relation: "one-to-many" },
+      });
+      expect(joined1ToM).toEqual([
+        { id: null, session: [] },
+        { id: undefined, session: [] },
+      ]);
     });
   });
 });

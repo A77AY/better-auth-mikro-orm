@@ -129,4 +129,34 @@ describe("better-auth-mikro-orm CLI", () => {
     );
     expect(messages.join("")).toContain("better-auth-mikro-orm generate");
   });
+
+  test("throws error on missing or invalid command", async () => {
+    await expect(runCli([])).rejects.toThrow('Expected the "generate" command.');
+    await expect(runCli(["migrate"])).rejects.toThrow('Expected the "generate" command.');
+  });
+
+  test("throws error on invalid --style or --casing flags", async () => {
+    const directory = await mkdtemp(join(process.cwd(), ".tmp-cli-flags-"));
+    temporaryDirectories.push(directory);
+    const config = join(directory, "auth.ts");
+    await writeFile(config, "export default { options: {} };\n");
+
+    await expect(runCli(["generate", "--config", config, "--style", "invalid"])).rejects.toThrow(
+      'Invalid --style value "invalid"',
+    );
+    await expect(runCli(["generate", "--config", config, "--casing", "invalid"])).rejects.toThrow(
+      'Invalid --casing value "invalid"',
+    );
+  });
+
+  test("throws error when config file does not export auth instance or options", async () => {
+    const directory = await mkdtemp(join(process.cwd(), ".tmp-cli-invalid-auth-"));
+    temporaryDirectories.push(directory);
+    const config = join(directory, "auth.ts");
+    await writeFile(config, "export const somethingElse = 123;\n");
+
+    await expect(runCli(["generate", "--config", config])).rejects.toThrow(
+      "The config must export a Better Auth instance or configuration",
+    );
+  });
 });

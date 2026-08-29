@@ -129,6 +129,8 @@ describe("transformWhere", () => {
       [
         { field: "email", operator: "eq", value: "test@example.com", mode: "insensitive" },
         { field: "name", operator: "contains", value: "alice", mode: "insensitive" },
+        { field: "name", operator: "starts_with", value: "ali", mode: "insensitive" },
+        { field: "name", operator: "ends_with", value: "ice", mode: "insensitive" },
         { field: "name", operator: "ne", value: "bob", mode: "insensitive" },
         { field: "role", operator: "in", value: ["admin", "user"], mode: "insensitive" },
         { field: "role", operator: "not_in", value: ["banned"], mode: "insensitive" },
@@ -140,9 +142,26 @@ describe("transformWhere", () => {
     const and = (filter as { $and: Record<string, unknown>[] }).$and;
     expect(and[0].email).toEqual({ $re: /^test@example\.com$/i });
     expect(and[1].name).toEqual({ $re: /alice/i });
-    expect(and[2]).toEqual({ $not: { name: { $re: /^bob$/i } } });
-    expect(and[3]).toHaveProperty("$or");
-    expect(and[4]).toHaveProperty("$not");
+    expect(and[2].name).toEqual({ $re: /^ali/i });
+    expect(and[3].name).toEqual({ $re: /ice$/i });
+    expect(and[4]).toEqual({ $not: { name: { $re: /^bob$/i } } });
+    expect(and[5]).toHaveProperty("$or");
+    expect(and[6]).toHaveProperty("$not");
+  });
+
+  test("transforms pattern matching on MongoDB without insensitive flag", () => {
+    const filter = transformWhere(
+      [
+        { field: "name", operator: "contains", value: "alice" },
+        { field: "name", operator: "starts_with", value: "ali" },
+        { field: "name", operator: "ends_with", value: "ice" },
+      ],
+      { meta: mockMeta, mongo: true },
+    );
+
+    expect(filter).toEqual({
+      $and: [{ name: { $re: /alice/ } }, { name: { $re: /^ali/ } }, { name: { $re: /ice$/ } }],
+    });
   });
 
   test("groups OR conditions without weakening AND conditions", () => {

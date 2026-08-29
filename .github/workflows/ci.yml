@@ -54,8 +54,23 @@ jobs:
         run: vp check
         if: matrix.db == 'sqlite'
 
+      - name: Run tests with coverage
+        run: vp test --coverage
+        if: matrix.db == 'sqlite'
+        env:
+          DB_TYPE: sqlite
+
+      - name: Upload coverage report to Codecov
+        uses: codecov/codecov-action@v5
+        if: matrix.db == 'sqlite' && matrix.node-version == '24'
+        with:
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Run tests
         run: vp test
+        if: matrix.db != 'sqlite'
         env:
           DB_TYPE: ${{ matrix.db }}
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/better_auth_test

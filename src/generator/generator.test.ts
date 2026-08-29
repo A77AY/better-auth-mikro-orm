@@ -293,6 +293,59 @@ describe("generateMikroOrmSchema", () => {
       await orm.close(true);
     }
   });
+
+  test("supports legacy compatibility flags (no native json, dates, or booleans)", () => {
+    const legacyTables = {
+      user: {
+        modelName: "user",
+        indexes: [
+          { name: "user_role_idx", fields: ["role"] },
+          { name: "user_status_idx", fields: ["status"] },
+        ],
+        fields: {
+          role: { type: ["admin", "user"], required: false, defaultValue: "user" },
+          status: { type: "string", index: true },
+          active: { type: "boolean", defaultValue: 1 },
+          metadata: { type: "json" },
+          tags: { type: "string[]" },
+          bigNumber: { type: "number", bigint: true },
+          createdAt: { type: "date" },
+        },
+      },
+    } satisfies BetterAuthDBSchema;
+
+    const defineResult = generateMikroOrmSchema({
+      tables: legacyTables,
+      supportsBooleans: false,
+      supportsJSON: false,
+      supportsDates: false,
+      supportsArrays: true,
+      entityStyle: "define-entity",
+    });
+
+    expect(defineResult.code).toContain('p.integer().fieldName("active")');
+    expect(defineResult.code).toContain('p.text().fieldName("metadata")');
+    expect(defineResult.code).toContain('p.string().fieldName("createdAt")');
+    expect(defineResult.code).toContain('p.array().fieldName("tags")');
+    expect(defineResult.code).toContain('p.bigint("number").fieldName("bigNumber")');
+
+    const decoratorResult = generateMikroOrmSchema({
+      tables: legacyTables,
+      supportsBooleans: false,
+      supportsJSON: false,
+      supportsDates: false,
+      supportsArrays: true,
+      entityStyle: "decorators",
+    });
+
+    expect(decoratorResult.code).toContain('@Index({ name: "user_role_idx"');
+    expect(decoratorResult.code).toContain(
+      '@Enum({ items: () => ["admin", "user"], fieldName: "role", nullable: true, default: "user" })',
+    );
+    expect(decoratorResult.code).toContain('@Property({ type: "number", fieldName: "active"');
+    expect(decoratorResult.code).toContain('@Property({ type: "text", fieldName: "metadata"');
+    expect(decoratorResult.code).toContain('@Property({ type: "array", fieldName: "tags"');
+  });
 });
 
 describe("generateMikroOrmSchemaDirectory", () => {

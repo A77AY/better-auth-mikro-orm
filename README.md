@@ -6,7 +6,8 @@ MikroORM database adapter and entity generator for [Better Auth](https://www.bet
 
 [![npm version](https://img.shields.io/npm/v/@a77ay/better-auth-mikro-orm.svg?color=blue&logo=npm&logoColor=white)](https://www.npmjs.com/package/@a77ay/better-auth-mikro-orm)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/@a77ay/better-auth-mikro-orm.svg?logo=vite&logoColor=white)](https://bundlephobia.com/package/@a77ay/better-auth-mikro-orm)
-[![Tests](https://img.shields.io/github/actions/workflow/status/A77AY/better-auth-mikro-orm/ci.yml?branch=main&label=540%2B%20tests%20%28full%20official%20coverage%29&logo=github&logoColor=white)](https://github.com/A77AY/better-auth-mikro-orm/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/A77AY/better-auth-mikro-orm/ci.yml?branch=main&label=550%2B%20tests&logo=github&logoColor=white)](https://github.com/A77AY/better-auth-mikro-orm/actions/workflows/ci.yml)
+[![codecov](https://img.shields.io/codecov/c/github/A77AY/better-auth-mikro-orm?logo=codecov&logoColor=white)](https://codecov.io/gh/A77AY/better-auth-mikro-orm)
 
 ## Features
 
