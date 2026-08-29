@@ -61,7 +61,7 @@ jobs:
           DB_TYPE: sqlite
 
       - name: Upload coverage report to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         if: matrix.db == 'sqlite' && matrix.node-version == '24'
         with:
           files: ./coverage/lcov.info
