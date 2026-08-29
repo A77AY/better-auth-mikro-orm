@@ -107,18 +107,48 @@ export async function runCli(arguments_: string[], io: CliIO = {}): Promise<numb
 }
 
 function findAuth(module: Record<string, unknown>): AuthLike {
-  const candidates = [module.auth, module.default, ...Object.values(module)];
-  const auth = candidates.find(isAuthLike);
-  if (!auth) {
-    throw new Error(
-      "The config must export a Better Auth instance, for example `export const auth = betterAuth(...)`.",
-    );
+  const candidates = [
+    module.auth,
+    module.authConfig,
+    module.config,
+    module.default,
+    ...Object.values(module),
+  ];
+  for (const candidate of candidates) {
+    if (isAuthInstance(candidate)) {
+      return candidate;
+    }
+    if (isAuthOptions(candidate)) {
+      return { options: candidate };
+    }
   }
-  return auth;
+  throw new Error(
+    "The config must export a Better Auth instance or configuration, for example `export const auth = betterAuth(...)` or `export const authConfig = { ... }`.",
+  );
 }
 
-function isAuthLike(value: unknown): value is AuthLike {
-  return typeof value === "object" && value !== null && "options" in value;
+function isAuthInstance(value: unknown): value is AuthLike {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "options" in value &&
+    typeof (value as { options: unknown }).options === "object" &&
+    (value as { options: unknown }).options !== null
+  );
+}
+
+function isAuthOptions(value: unknown): value is BetterAuthOptions {
+  if (typeof value !== "object" || value === null) return false;
+  return (
+    "plugins" in value ||
+    "emailAndPassword" in value ||
+    "socialProviders" in value ||
+    "user" in value ||
+    "session" in value ||
+    "database" in value ||
+    "baseURL" in value ||
+    "secret" in value
+  );
 }
 
 function parseEntityStyle(value: string | undefined): EntityStyle {

@@ -89,6 +89,39 @@ describe("better-auth-mikro-orm CLI", () => {
     expect(index).toContain('import { User } from "./user.entity";');
   });
 
+  test("supports exporting raw authConfig object instead of betterAuth instance", async () => {
+    const directory = await mkdtemp(join(process.cwd(), ".tmp-cli-config-"));
+    temporaryDirectories.push(directory);
+    const config = join(directory, "auth.config.ts");
+    const output = join(directory, "entities");
+    await writeFile(
+      config,
+      `export const authConfig = {
+  emailAndPassword: { enabled: true },
+  user: {
+    additionalFields: {
+      bio: { type: "string", required: false },
+    },
+  },
+};
+`,
+    );
+
+    const exitCode = await runCli([
+      "generate",
+      "--config",
+      config,
+      "--output",
+      output,
+      "--file-suffix",
+      ".entity",
+      "--yes",
+    ]);
+
+    expect(exitCode).toBe(0);
+    expect(await readFile(join(output, "user.entity.ts"), "utf8")).toContain("bio: p.text()");
+  });
+
   test("prints help without loading a config", async () => {
     const messages: string[] = [];
     await expect(runCli(["--help"], { stdout: (message) => messages.push(message) })).resolves.toBe(
