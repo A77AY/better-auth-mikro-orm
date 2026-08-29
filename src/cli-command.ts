@@ -23,6 +23,7 @@ Options:
   -o, --output <path>   Output directory (default: src/entities/auth)
       --style <style>   define-entity or decorators
       --casing <casing> camelCase or snake_case
+      --file-suffix <s> Custom entity file suffix (e.g. .entity)
   -y, --yes             Overwrite generated files without confirmation
   -h, --help            Show this help
 `;
@@ -43,6 +44,8 @@ export async function runCli(arguments_: string[], io: CliIO = {}): Promise<numb
     options: {
       casing: { type: "string" },
       config: { type: "string", short: "c", default: "./src/auth.ts" },
+      "file-suffix": { type: "string" },
+      fileSuffix: { type: "string" },
       help: { type: "boolean", short: "h" },
       output: { type: "string", short: "o" },
       style: { type: "string" },
@@ -70,9 +73,11 @@ export async function runCli(arguments_: string[], io: CliIO = {}): Promise<numb
   const entityStyle = parseEntityStyle(values.style ?? adapterOptions?.entityStyle);
   const casing = parseCasing(values.casing ?? adapterOptions?.casing);
   const directory = values.output ?? adapterOptions?.directory ?? "src/entities/auth";
+  const fileSuffix = values["file-suffix"] ?? values.fileSuffix ?? adapterOptions?.fileSuffix;
   const generatorOptions = {
     tables: getAuthTables(auth.options),
     directory,
+    fileSuffix,
     numericIds:
       adapterOptions?.supportsNumericIds ??
       auth.options.advanced?.database?.generateId === "serial",

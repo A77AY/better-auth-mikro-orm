@@ -363,4 +363,43 @@ describe("generateMikroOrmSchemaDirectory", () => {
 
     expect((await readdir(directory)).sort()).toEqual(["index.ts", "session.ts", "user.ts"]);
   });
+
+  test("supports custom fileSuffix for generated entity files", async () => {
+    const directory = await mkdtemp(join(process.cwd(), ".tmp-generator-suffix-"));
+    temporaryDirectories.push(directory);
+    const generated = await writeMikroOrmSchemaDirectory({
+      tables,
+      directory,
+      fileSuffix: ".entity",
+    });
+
+    expect(generated.files.map(({ path }) => path)).toEqual([
+      "user.entity.ts",
+      "session.entity.ts",
+      "index.ts",
+    ]);
+    expect(generated.files.find(({ path }) => path === "session.entity.ts")?.code).toContain(
+      'import { User } from "./user.entity";',
+    );
+    expect(generated.files.find(({ path }) => path === "index.ts")?.code).toContain(
+      'import { User } from "./user.entity";',
+    );
+    expect(generated.files.find(({ path }) => path === "index.ts")?.code).toContain(
+      'import { Session } from "./session.entity";',
+    );
+
+    const module = (await import(
+      `${pathToFileURL(join(directory, "index.ts")).href}?test=${Date.now()}`
+    )) as { betterAuthEntities: any[] };
+    const orm = await MikroORM.init({ dbName: ":memory:", entities: module.betterAuthEntities });
+
+    try {
+      await orm.schema.create();
+      expect(
+        [...orm.getMetadata().getAll().values()].map(({ tableName }) => tableName).sort(),
+      ).toEqual(["login_session", "member"]);
+    } finally {
+      await orm.close(true);
+    }
+  });
 });

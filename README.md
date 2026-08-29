@@ -99,11 +99,12 @@ and apply the database migration.
 - `--output <path>`: Output directory (default: `src/entities/auth`).
 - `--style <style>`: `define-entity` or `decorators`; overrides the adapter option.
 - `--casing <casing>`: `camelCase` or `snake_case`; overrides the adapter option.
+- `--file-suffix <suffix>`: Custom entity file suffix (e.g. `.entity` for `user.entity.ts`); overrides the adapter option.
 - `--yes`: Overwrite generated files. Without it, existing generated files are protected.
 
 #### Configuring Defaults in `auth.ts`
 
-Instead of passing CLI flags every time, generator options such as `entityStyle`, `casing`, and the default output `directory` can be configured directly in `mikroOrmAdapter`:
+Instead of passing CLI flags every time, generator options such as `entityStyle`, `casing`, `fileSuffix`, and the default output `directory` can be configured directly in `mikroOrmAdapter`:
 
 ```typescript
 export const auth = betterAuth({
@@ -111,6 +112,7 @@ export const auth = betterAuth({
     entityStyle: "define-entity", // "define-entity" (default) | "decorators"
     casing: "snake_case", // "snake_case" | "camelCase" (default)
     directory: "src/entities/auth", // Default CLI output directory
+    fileSuffix: ".entity", // Optional file suffix: user.entity.ts (default: "")
   }),
 });
 ```
@@ -149,6 +151,7 @@ mikroOrmAdapter(em, options?)
 | `provider`         | `DatabaseProvider`                                   | Auto-detected            | Database provider (`"postgresql"`, `"sqlite"`, `"mysql"`, `"mongodb"`, or custom).      |
 | `casing`           | `"snake_case" \| "camelCase"`                        | `"camelCase"`            | Naming convention for generated database columns.                                       |
 | `entityStyle`      | `"define-entity" \| "decorators"`                    | `"define-entity"`        | Entity definition style (`defineEntity` fluent schema or `@Entity()` class decorators). |
+| `fileSuffix`       | `string`                                             | `""`                     | Custom file suffix for entity files (e.g. `".entity"` generates `user.entity.ts`).      |
 | `directory`        | `string`                                             | `"src/entities/auth"`    | Default output directory used by the package CLI.                                       |
 | `schemaFile`       | `string`                                             | `"src/entities/auth.ts"` | Default output file path for CLI schema generation.                                     |
 | `debugLogs`        | `boolean \| DBAdapterDebugLogOption`                 | `false`                  | Enable Better Auth adapter debug logging.                                               |

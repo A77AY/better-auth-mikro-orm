@@ -7,6 +7,13 @@ export interface MikroOrmSchemaGeneratorOptions {
   tables: BetterAuthDBSchema;
   file?: string;
   directory?: string;
+  /**
+   * Optional suffix for generated entity file names (e.g. `".entity"` or `".model"`).
+   * When set to `".entity"`, generates `user.entity.ts`, `session.entity.ts`, etc.
+   *
+   * @default ""
+   */
+  fileSuffix?: string;
   numericIds?: boolean;
   supportsArrays?: boolean;
   supportsBooleans?: boolean;

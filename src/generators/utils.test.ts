@@ -110,6 +110,28 @@ describe("generator utils", () => {
         ]),
       );
     });
+
+    test("appends fileSuffix when provided", () => {
+      const entries: [string, Table][] = [
+        ["user", { modelName: "user", fields: {} }],
+        ["session", { modelName: "session", fields: {} }],
+      ];
+      const modelNames = createModelNames(entries);
+
+      expect(createFileNames(entries, modelNames, { fileSuffix: ".entity" })).toEqual(
+        new Map([
+          ["user", "user.entity.ts"],
+          ["session", "session.entity.ts"],
+        ]),
+      );
+
+      expect(createFileNames(entries, modelNames, { fileSuffix: "entity" })).toEqual(
+        new Map([
+          ["user", "user.entity.ts"],
+          ["session", "session.entity.ts"],
+        ]),
+      );
+    });
   });
 
   describe("databasePropertyName", () => {

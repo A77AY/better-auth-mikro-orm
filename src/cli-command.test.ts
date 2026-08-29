@@ -65,6 +65,30 @@ describe("better-auth-mikro-orm CLI", () => {
     ).resolves.toBe(0);
   });
 
+  test("supports --file-suffix to customize entity file names", async () => {
+    const directory = await mkdtemp(join(process.cwd(), ".tmp-cli-suffix-"));
+    temporaryDirectories.push(directory);
+    const config = join(directory, "auth.ts");
+    const output = join(directory, "entities");
+    await writeFile(config, "export default { options: {} };\n");
+
+    const exitCode = await runCli([
+      "generate",
+      "--config",
+      config,
+      "--output",
+      output,
+      "--file-suffix",
+      ".entity",
+      "--yes",
+    ]);
+
+    expect(exitCode).toBe(0);
+    expect(await readFile(join(output, "user.entity.ts"), "utf8")).toContain("export const User");
+    const index = await readFile(join(output, "index.ts"), "utf8");
+    expect(index).toContain('import { User } from "./user.entity";');
+  });
+
   test("prints help without loading a config", async () => {
     const messages: string[] = [];
     await expect(runCli(["--help"], { stdout: (message) => messages.push(message) })).resolves.toBe(

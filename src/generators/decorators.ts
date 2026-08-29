@@ -181,7 +181,7 @@ export function generateDecoratorFiles(
 ): GeneratedSchemaFile[] {
   const entries = getSortedTableEntries(options.tables);
   const modelNames = createModelNames(entries);
-  const fileNames = createFileNames(entries, modelNames);
+  const fileNames = createFileNames(entries, modelNames, options);
   const files = entries.map(([defaultModel, table]) => {
     const imports = [...referencedModels(table, entries)]
       .filter((model) => model !== defaultModel)

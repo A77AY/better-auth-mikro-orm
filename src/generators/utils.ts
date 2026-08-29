@@ -49,8 +49,14 @@ export function createModelNames(entries: [string, Table][]) {
   );
 }
 
-export function createFileNames(entries: [string, Table][], modelNames: Map<string, string>) {
+export function createFileNames(
+  entries: [string, Table][],
+  modelNames: Map<string, string>,
+  options?: { fileSuffix?: string },
+) {
   const usedNames = new Set(["index"]);
+  const rawSuffix = options?.fileSuffix?.trim() ?? "";
+  const suffixExt = rawSuffix && !rawSuffix.startsWith(".") ? `.${rawSuffix}` : rawSuffix;
   return new Map(
     entries.map(([model]) => {
       const baseName = toKebabCase(modelNames.get(model)!);
@@ -58,7 +64,7 @@ export function createFileNames(entries: [string, Table][], modelNames: Map<stri
       let suffix = 2;
       while (usedNames.has(name)) name = `${baseName}-${suffix++}`;
       usedNames.add(name);
-      return [model, `${name}.ts`];
+      return [model, `${name}${suffixExt}.ts`];
     }),
   );
 }

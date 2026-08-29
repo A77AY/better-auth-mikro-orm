@@ -124,6 +124,14 @@ export interface MikroOrmAdapterOptions {
    * @default "define-entity"
    */
   entityStyle?: EntityStyle;
+
+  /**
+   * Optional suffix for generated entity file names (e.g. `".entity"` or `".model"`).
+   * When set to `".entity"`, generates `user.entity.ts`, `session.entity.ts`, etc.
+   *
+   * @default ""
+   */
+  fileSuffix?: string;
 }
 
 function createOrmAdapter(
