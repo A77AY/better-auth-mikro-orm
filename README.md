@@ -2,11 +2,11 @@
 
 MikroORM database adapter and entity generator for [Better Auth](https://www.better-auth.com).
 
-[![npm version](https://img.shields.io/npm/v/@a77ay/better-auth-mikro-orm.svg?color=blue)](https://www.npmjs.com/package/@a77ay/better-auth-mikro-orm)
-[![npm downloads](https://img.shields.io/npm/dm/@a77ay/better-auth-mikro-orm.svg?color=blue)](https://www.npmjs.com/package/@a77ay/better-auth-mikro-orm)
-[![bundle size](https://img.shields.io/bundlephobia/minzip/@a77ay/better-auth-mikro-orm.svg)](https://bundlephobia.com/package/@a77ay/better-auth-mikro-orm)
-[![license](https://img.shields.io/npm/l/@a77ay/better-auth-mikro-orm.svg)](https://github.com/A77AY/better-auth-mikro-orm/blob/main/LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[**🔌 Database Adapter**](#1-adapter-setup) &nbsp;•&nbsp; [**⚡ CLI Entity Generator**](#2-schema--entity-generation)
+
+[![npm version](https://img.shields.io/npm/v/@a77ay/better-auth-mikro-orm.svg?color=blue&logo=npm&logoColor=white)](https://www.npmjs.com/package/@a77ay/better-auth-mikro-orm)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/@a77ay/better-auth-mikro-orm.svg?logo=vite&logoColor=white)](https://bundlephobia.com/package/@a77ay/better-auth-mikro-orm)
+[![Tests](https://img.shields.io/github/actions/workflow/status/A77AY/better-auth-mikro-orm/ci.yml?branch=main&label=540%2B%20tests%20%28full%20official%20coverage%29&logo=github&logoColor=white)](https://github.com/A77AY/better-auth-mikro-orm/actions/workflows/ci.yml)
 
 ## Features
 
@@ -54,19 +54,56 @@ export const auth = betterAuth({
 
 Pass your `MikroORM` instance, `EntityManager`, or a getter function. When passing `orm`, the adapter automatically uses `RequestContext.getEntityManager()` per HTTP request and falls back to `orm.em` for CLI commands and background scripts.
 
-Every Better Auth model must be registered as a MikroORM entity. Its `tableName` must match the
-corresponding Better Auth model name (including configured model renames or pluralization). The
-adapter handles data access and transactions; MikroORM migrations remain responsible for creating
-and updating the database schema.
-
 ### 2. Schema / Entity Generation
 
-> [!NOTE]
-> Ensure `@a77ay/better-auth-mikro-orm` and `@mikro-orm/core` are installed in your project before generating, as the Better Auth CLI dynamically imports your auth configuration file.
+#### Running the Generator
 
-#### Configuring Generator Options
+Use the package CLI to generate individual entity files and an `index.ts` barrel export:
 
-Options such as `entityStyle`, `casing`, and the default output directory are configured directly in `mikroOrmAdapter`:
+```bash
+# Using npx
+npx @a77ay/better-auth-mikro-orm generate \
+  --config ./src/auth.ts \
+  --output ./src/entities/auth \
+  --yes
+
+# Using pnpm
+pnpm exec better-auth-mikro-orm generate \
+  --config ./src/auth.ts \
+  --output ./src/entities/auth \
+  --yes
+```
+
+#### Register in MikroORM
+
+The generated `index.ts` exports each entity and a `betterAuthEntities` array. Register that array in your MikroORM configuration:
+
+```typescript
+import { betterAuthEntities } from "./src/entities/auth";
+
+export default {
+  entities: [...betterAuthEntities],
+};
+```
+
+Every Better Auth model must be registered as a MikroORM entity. Its `tableName` must match the
+corresponding Better Auth model name (including configured model renames or pluralization).
+
+The adapter handles data access and transactions; MikroORM migrations remain responsible for creating
+and updating the database schema. After generating entities, use MikroORM's migration tooling to create
+and apply the database migration.
+
+#### CLI Flags
+
+- `--config <path>`: Better Auth config (default: `./src/auth.ts`).
+- `--output <path>`: Output directory (default: `src/entities/auth`).
+- `--style <style>`: `define-entity` or `decorators`; overrides the adapter option.
+- `--casing <casing>`: `camelCase` or `snake_case`; overrides the adapter option.
+- `--yes`: Overwrite generated files. Without it, existing generated files are protected.
+
+#### Configuring Defaults in `auth.ts`
+
+Instead of passing CLI flags every time, generator options such as `entityStyle`, `casing`, and the default output `directory` can be configured directly in `mikroOrmAdapter`:
 
 ```typescript
 export const auth = betterAuth({
@@ -78,54 +115,25 @@ export const auth = betterAuth({
 });
 ```
 
-#### Running the Generator
+#### Single-File Generation (Official Better Auth CLI)
 
-Run the package CLI to generate one file per entity and an `index.ts` barrel:
+If you prefer generating a single schema file instead of a modular directory, you can use the official Better Auth CLI:
 
 ```bash
-pnpm exec better-auth-mikro-orm generate \
+# Using npx
+npx auth@latest generate \
   --config ./src/auth.ts \
-  --output ./src/entities/auth \
+  --output ./src/entities/auth.ts \
+  --yes
+
+# Using pnpm
+pnpm dlx auth@latest generate \
+  --config ./src/auth.ts \
+  --output ./src/entities/auth.ts \
   --yes
 ```
 
-CLI flags:
-
-- `--config <path>`: Better Auth config (default: `./src/auth.ts`).
-- `--output <path>`: Output directory (default: `src/entities/auth`).
-- `--style <style>`: `define-entity` or `decorators`; overrides the adapter option.
-- `--casing <casing>`: `camelCase` or `snake_case`; overrides the adapter option.
-- `--yes`: Overwrite generated files. Without it, existing generated files are protected.
-
-The generated `index.ts` exports each entity and a `betterAuthEntities` array. Register that array
-in your MikroORM configuration:
-
-```typescript
-import { betterAuthEntities } from "./src/entities/auth";
-
-export default {
-  entities: [...betterAuthEntities],
-};
-```
-
-After generating, use MikroORM's migration tooling to create and apply the database migration.
-
-The generated structure is:
-
-```text
-src/entities/auth/
-├── user.ts
-├── session.ts
-├── account.ts
-├── verification.ts
-└── index.ts
-```
-
-`index.ts` exports every entity and the `betterAuthEntities` array. Existing unrelated files in the
-directory are left untouched.
-
-The adapter also keeps the official Better Auth `createSchema` hook for consumers that need its
-single-file generator contract.
+The adapter exposes the official Better Auth `createSchema` hook used by this command.
 
 ## Configuration Options
 
@@ -146,22 +154,6 @@ mikroOrmAdapter(em, options?)
 | `debugLogs`        | `boolean \| DBAdapterDebugLogOption`                 | `false`                  | Enable Better Auth adapter debug logging.                                               |
 | `usePlural`        | `boolean`                                            | `false`                  | Use plural table names for generated entities.                                          |
 | `transactions`     | `boolean`                                            | `true`                   | Whether to execute multi-operation callbacks in a transaction.                          |
-
-### Entity Styles
-
-The generator supports two entity definition styles:
-
-- **`define-entity` (default)**: Modern MikroORM v7 fluent `defineEntity()` schema API with automatic TypeScript type inference (`InferEntity`).
-- **`decorators`**: Class-based entities with `@Entity()`, `@Property()`, `@PrimaryKey()`, and `@ManyToOne()`.
-
-```typescript
-export const auth = betterAuth({
-  database: mikroOrmAdapter(orm, {
-    entityStyle: "define-entity", // "define-entity" | "decorators"
-    casing: "snake_case", // "snake_case" | "camelCase"
-  }),
-});
-```
 
 ## Development
 
