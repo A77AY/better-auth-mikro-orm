@@ -166,24 +166,6 @@ This project uses [Vite+](https://viteplus.dev) for tooling:
   vp test
   ```
 
-- Run tests (PostgreSQL):
-
-  ```bash
-  vpr test:postgres
-  ```
-
-- Run tests (MongoDB):
-
-  ```bash
-  vpr test:mongo
-  ```
-
-- Run official Better Auth test suites:
-
-  ```bash
-  vpr test:adapter
-  ```
-
 - Type check, lint and format:
 
   ```bash
