@@ -1,5 +1,6 @@
 import type { DBFieldAttribute } from "better-auth/db";
 import type { GeneratedSchemaFile, MikroOrmSchemaGeneratorOptions, Table } from "./types";
+import { propertyKey, quote, stringArray } from "../utils";
 import {
   createFileNames,
   createModelNames,
@@ -7,10 +8,7 @@ import {
   entityPropertyName,
   findReferencedTable,
   getSortedTableEntries,
-  propertyKey,
-  quote,
   scalarType,
-  stringArray,
 } from "./utils";
 
 function renderDecoratorProperty(

@@ -1,39 +1,6 @@
 import type { DBFieldAttribute } from "better-auth/db";
+import { quote, toKebabCase, toPascalCase, toSnakeCase } from "../utils";
 import type { MikroOrmSchemaGeneratorOptions, Table } from "./types";
-
-export function quote(value: string) {
-  return JSON.stringify(value);
-}
-
-export function propertyKey(value: string) {
-  return /^[A-Z_$][\w$]*$/i.test(value) ? value : quote(value);
-}
-
-export function stringArray(values: readonly string[]) {
-  return `[${values.map(quote).join(", ")}]`;
-}
-
-export function toPascalCase(value: string) {
-  const result = value
-    .replaceAll(/([a-z\d])([A-Z])/g, "$1 $2")
-    .split(/[^a-zA-Z\d]+/)
-    .filter(Boolean)
-    .map((part) => `${part[0]?.toUpperCase()}${part.slice(1)}`)
-    .join("");
-  if (!result) return "Model";
-  return /^\d/.test(result) ? `Model${result}` : result;
-}
-
-export function toSnakeCase(value: string) {
-  return value
-    .replace(/([a-z\d])([A-Z])/g, "$1_$2")
-    .replace(/[-\s]+/g, "_")
-    .toLowerCase();
-}
-
-export function toKebabCase(value: string) {
-  return toSnakeCase(value).replaceAll("_", "-");
-}
 
 export function createModelNames(entries: [string, Table][]) {
   const usedNames = new Set<string>();
