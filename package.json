@@ -1,6 +1,6 @@
 {
   "name": "@a77ay/better-auth-mikro-orm",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "MikroORM database adapter and entity generator for Better Auth.",
   "keywords": [
     "adapter",
