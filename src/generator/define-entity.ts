@@ -82,7 +82,7 @@ function renderDefineIndexes(table: Table) {
   const indexes = table.indexes?.filter((index) => !index.unique) ?? [];
   const uniques = table.indexes?.filter((index) => index.unique) ?? [];
   const render = (items: typeof indexes) => {
-    if (!items.length) return "[]";
+    if (!items.length) return undefined;
 
     const values = items.map((index) => {
       const properties = index.fields.map((fieldName) =>
@@ -113,6 +113,10 @@ function renderDefineEntity(
     renderDefineProperty(fieldName, field, entries, modelNames, options),
   );
   const { indexes, uniques } = renderDefineIndexes(table);
+  const extraFields: string[] = [];
+  if (indexes) extraFields.push(`  indexes: ${indexes},`);
+  if (uniques) extraFields.push(`  uniques: ${uniques},`);
+  const extraString = extraFields.length ? `\n${extraFields.join("\n")}` : "";
 
   return `export const ${modelName} = defineEntity({
   name: ${quote(modelName)},
@@ -120,9 +124,7 @@ function renderDefineEntity(
   properties: {
     id: ${idChain},
 ${properties.join("\n")}
-  },
-  indexes: ${indexes},
-  uniques: ${uniques},
+  },${extraString}
 });
 
 export type ${modelName} = InferEntity<typeof ${modelName}>;`;
