@@ -68,7 +68,7 @@ npx @a77ay/better-auth-mikro-orm generate \
   --yes
 
 # Using pnpm
-pnpm exec better-auth-mikro-orm generate \
+pnpm exec @a77ay/better-auth-mikro-orm generate \
   --config ./src/auth.ts \
   --output ./src/entities/auth \
   --yes
