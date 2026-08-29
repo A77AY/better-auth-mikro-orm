@@ -66,44 +66,39 @@ and updating the database schema.
 
 #### Configuring Generator Options
 
-Options such as `entityStyle`, `casing`, and the default `schemaFile` path are configured directly in `mikroOrmAdapter`:
+Options such as `entityStyle`, `casing`, and the default output directory are configured directly in `mikroOrmAdapter`:
 
 ```typescript
 export const auth = betterAuth({
   database: mikroOrmAdapter(orm, {
     entityStyle: "define-entity", // "define-entity" (default) | "decorators"
     casing: "snake_case", // "snake_case" | "camelCase" (default)
-    schemaFile: "src/entities/auth.ts", // Default output path
+    directory: "src/entities/auth", // Default CLI output directory
   }),
 });
 ```
 
 #### Running the Generator
 
-Run the official Better Auth CLI to generate your entity schema:
+Run the package CLI to generate one file per entity and an `index.ts` barrel:
 
 ```bash
-# Using npm
-npx auth@latest generate --config ./src/auth.ts --output ./src/entities/auth.ts --yes
-
-# Using pnpm
-pnpm dlx auth@latest generate --config ./src/auth.ts --output ./src/entities/auth.ts --yes
-
-# Using yarn
-yarn dlx auth@latest generate --config ./src/auth.ts --output ./src/entities/auth.ts --yes
-
-# Using bun
-bunx auth@latest generate --config ./src/auth.ts --output ./src/entities/auth.ts --yes
+pnpm exec better-auth-mikro-orm generate \
+  --config ./src/auth.ts \
+  --output ./src/entities/auth \
+  --yes
 ```
 
 CLI flags:
 
-- `--config <path>`: Path to your auth configuration file (e.g. `./src/auth.ts`).
-- `--output <path>`: Path where the generated entity file will be written (overrides `schemaFile`).
-- `--yes`: Overwrite existing files without confirmation prompts.
+- `--config <path>`: Better Auth config (default: `./src/auth.ts`).
+- `--output <path>`: Output directory (default: `src/entities/auth`).
+- `--style <style>`: `define-entity` or `decorators`; overrides the adapter option.
+- `--casing <casing>`: `camelCase` or `snake_case`; overrides the adapter option.
+- `--yes`: Overwrite generated files. Without it, existing generated files are protected.
 
-The generated module exports each entity and a `betterAuthEntities` array. Register that array in
-your MikroORM configuration:
+The generated `index.ts` exports each entity and a `betterAuthEntities` array. Register that array
+in your MikroORM configuration:
 
 ```typescript
 import { betterAuthEntities } from "./src/entities/auth";
@@ -114,6 +109,23 @@ export default {
 ```
 
 After generating, use MikroORM's migration tooling to create and apply the database migration.
+
+The generated structure is:
+
+```text
+src/entities/auth/
+├── user.ts
+├── session.ts
+├── account.ts
+├── verification.ts
+└── index.ts
+```
+
+`index.ts` exports every entity and the `betterAuthEntities` array. Existing unrelated files in the
+directory are left untouched.
+
+The adapter also keeps the official Better Auth `createSchema` hook for consumers that need its
+single-file generator contract.
 
 ## Configuration Options
 
@@ -129,6 +141,7 @@ mikroOrmAdapter(em, options?)
 | `provider`         | `DatabaseProvider`                                   | Auto-detected            | Database provider (`"postgresql"`, `"sqlite"`, `"mysql"`, `"mongodb"`, or custom).      |
 | `casing`           | `"snake_case" \| "camelCase"`                        | `"camelCase"`            | Naming convention for generated database columns.                                       |
 | `entityStyle`      | `"define-entity" \| "decorators"`                    | `"define-entity"`        | Entity definition style (`defineEntity` fluent schema or `@Entity()` class decorators). |
+| `directory`        | `string`                                             | `"src/entities/auth"`    | Default output directory used by the package CLI.                                       |
 | `schemaFile`       | `string`                                             | `"src/entities/auth.ts"` | Default output file path for CLI schema generation.                                     |
 | `debugLogs`        | `boolean \| DBAdapterDebugLogOption`                 | `false`                  | Enable Better Auth adapter debug logging.                                               |
 | `usePlural`        | `boolean`                                            | `false`                  | Use plural table names for generated entities.                                          |

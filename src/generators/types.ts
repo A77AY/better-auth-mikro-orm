@@ -6,6 +6,7 @@ export type SchemaCasing = "snake_case" | "camelCase";
 export interface MikroOrmSchemaGeneratorOptions {
   tables: BetterAuthDBSchema;
   file?: string;
+  directory?: string;
   numericIds?: boolean;
   supportsArrays?: boolean;
   supportsBooleans?: boolean;
@@ -30,3 +31,13 @@ export interface MikroOrmSchemaGeneratorOptions {
 }
 
 export type Table = BetterAuthDBSchema[string];
+
+export interface GeneratedSchemaFile {
+  path: string;
+  code: string;
+}
+
+export interface GeneratedSchemaDirectory {
+  directory: string;
+  files: GeneratedSchemaFile[];
+}

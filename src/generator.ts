@@ -1,9 +1,21 @@
 import type { DBAdapterSchemaCreation } from "better-auth/adapters";
 import { generateDecoratorsSchema } from "./generators/decorators";
 import { generateDefineEntitySchema } from "./generators/define-entity";
-import type { EntityStyle, MikroOrmSchemaGeneratorOptions, SchemaCasing } from "./generators/types";
+import type {
+  EntityStyle,
+  GeneratedSchemaDirectory,
+  GeneratedSchemaFile,
+  MikroOrmSchemaGeneratorOptions,
+  SchemaCasing,
+} from "./generators/types";
 
-export type { EntityStyle, MikroOrmSchemaGeneratorOptions, SchemaCasing };
+export type {
+  EntityStyle,
+  GeneratedSchemaDirectory,
+  GeneratedSchemaFile,
+  MikroOrmSchemaGeneratorOptions,
+  SchemaCasing,
+};
 
 /**
  * Generate a deterministic MikroORM entity module for Better Auth and its plugins.

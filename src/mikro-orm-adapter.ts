@@ -21,6 +21,7 @@ import {
   type EntityRecord,
 } from "./adapter-utils";
 import { generateMikroOrmSchema, type EntityStyle, type SchemaCasing } from "./generator";
+import { attachGeneratorOptions } from "./generator-options";
 import { attachJoins, attachJoinsMany, selectFields } from "./joins";
 
 type FindOneInput = Parameters<CustomAdapter["findOne"]>[0];
@@ -98,6 +99,13 @@ export interface MikroOrmAdapterOptions {
    * @default "src/entities/auth.ts"
    */
   schemaFile?: string;
+
+  /**
+   * Default output directory used by the package CLI.
+   *
+   * @default "src/entities/auth"
+   */
+  directory?: string;
 
   /**
    * Field and column naming convention for the schema generator:
@@ -382,8 +390,8 @@ export function mikroOrmAdapter(em: EntityManagerProvider, options?: MikroOrmAda
     adapter: createOrmAdapter(em, options),
   });
 
-  return (authOptions: BetterAuthOptions) => {
+  return attachGeneratorOptions((authOptions: BetterAuthOptions) => {
     betterAuthOptions = authOptions;
     return factory(authOptions);
-  };
+  }, options);
 }

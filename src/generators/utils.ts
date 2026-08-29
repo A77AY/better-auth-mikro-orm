@@ -31,6 +31,10 @@ export function toSnakeCase(value: string) {
     .toLowerCase();
 }
 
+export function toKebabCase(value: string) {
+  return toSnakeCase(value).replaceAll("_", "-");
+}
+
 export function createModelNames(entries: [string, Table][]) {
   const usedNames = new Set<string>();
   return new Map(
@@ -41,6 +45,20 @@ export function createModelNames(entries: [string, Table][]) {
       while (usedNames.has(name)) name = `${baseName}${suffix++}`;
       usedNames.add(name);
       return [model, name];
+    }),
+  );
+}
+
+export function createFileNames(entries: [string, Table][], modelNames: Map<string, string>) {
+  const usedNames = new Set(["index"]);
+  return new Map(
+    entries.map(([model]) => {
+      const baseName = toKebabCase(modelNames.get(model)!);
+      let name = baseName;
+      let suffix = 2;
+      while (usedNames.has(name)) name = `${baseName}-${suffix++}`;
+      usedNames.add(name);
+      return [model, `${name}.ts`];
     }),
   );
 }

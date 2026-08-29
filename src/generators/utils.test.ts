@@ -1,6 +1,7 @@
 import type { DBFieldAttribute } from "better-auth/db";
 import { describe, expect, test } from "vite-plus/test";
 import {
+  createFileNames,
   createModelNames,
   databasePropertyName,
   findReferencedTable,
@@ -9,6 +10,7 @@ import {
   quote,
   scalarType,
   stringArray,
+  toKebabCase,
   toPascalCase,
   toSnakeCase,
 } from "./utils";
@@ -42,6 +44,13 @@ describe("generator utils", () => {
       expect(toSnakeCase("already_snake_case")).toBe("already_snake_case");
       expect(toSnakeCase("kebab-case-name")).toBe("kebab_case_name");
       expect(toSnakeCase("spaced name")).toBe("spaced_name");
+    });
+  });
+
+  describe("toKebabCase", () => {
+    test("creates stable entity file names", () => {
+      expect(toKebabCase("TwoFactor")).toBe("two-factor");
+      expect(toKebabCase("oauth_account")).toBe("oauth-account");
     });
   });
 
@@ -83,6 +92,23 @@ describe("generator utils", () => {
       expect(modelNames.get("user")).toBe("User");
       expect(modelNames.get("User")).toBe("User2");
       expect(modelNames.get("session")).toBe("Session");
+    });
+  });
+
+  describe("createFileNames", () => {
+    test("reserves index.ts for the barrel file", () => {
+      const entries: [string, Table][] = [
+        ["index", { modelName: "index", fields: {} }],
+        ["twoFactor", { modelName: "two_factor", fields: {} }],
+      ];
+      const modelNames = createModelNames(entries);
+
+      expect(createFileNames(entries, modelNames)).toEqual(
+        new Map([
+          ["index", "index-2.ts"],
+          ["twoFactor", "two-factor.ts"],
+        ]),
+      );
     });
   });
 

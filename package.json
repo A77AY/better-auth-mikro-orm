@@ -26,6 +26,9 @@
     "type": "git",
     "url": "git+https://github.com/A77AY/better-auth-mikro-orm.git"
   },
+  "bin": {
+    "better-auth-mikro-orm": "./dist/cli.mjs"
+  },
   "files": [
     "dist"
   ],
@@ -33,6 +36,7 @@
   "types": "./dist/index.d.mts",
   "exports": {
     ".": "./dist/index.mjs",
+    "./cli": "./dist/cli.mjs",
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -48,6 +52,9 @@
     "release": "changeset publish",
     "prepublishOnly": "vp run build",
     "prepare": "vp config"
+  },
+  "dependencies": {
+    "jiti": "^2.7.0"
   },
   "devDependencies": {
     "@better-auth/test-utils": "^1.7.2",

@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { ReferenceKind, wrap } from "@mikro-orm/core";
@@ -6,7 +6,7 @@ import { MikroORM } from "@mikro-orm/sqlite";
 import type { BetterAuthOptions } from "better-auth";
 import type { BetterAuthDBSchema } from "better-auth/db";
 import { afterEach, describe, expect, test } from "vite-plus/test";
-import { generateMikroOrmSchema, mikroOrmAdapter } from "./index";
+import { generateMikroOrmSchema, mikroOrmAdapter, writeMikroOrmSchemaDirectory } from "./index";
 
 const temporaryDirectories: string[] = [];
 
@@ -290,5 +290,77 @@ describe("generateMikroOrmSchema", () => {
     } finally {
       await orm.close(true);
     }
+  });
+});
+
+describe("generateMikroOrmSchemaDirectory", () => {
+  test("writes defineEntity models to separate files with an index", async () => {
+    const directory = await mkdtemp(join(process.cwd(), ".tmp-generator-directory-"));
+    temporaryDirectories.push(directory);
+    const directoryTables = {
+      ...tables,
+      twoFactor: {
+        modelName: "two_factor",
+        fields: {
+          secret: { type: "string", required: true },
+        },
+      },
+    } satisfies BetterAuthDBSchema;
+
+    const generated = await writeMikroOrmSchemaDirectory({ tables: directoryTables, directory });
+
+    expect(generated.files.map(({ path }) => path)).toEqual([
+      "user.ts",
+      "session.ts",
+      "two-factor.ts",
+      "index.ts",
+    ]);
+    expect((await readdir(directory)).sort()).toEqual([
+      "index.ts",
+      "session.ts",
+      "two-factor.ts",
+      "user.ts",
+    ]);
+    expect(generated.files.find(({ path }) => path === "session.ts")?.code).toContain(
+      'import { User } from "./user";',
+    );
+
+    const module = (await import(
+      `${pathToFileURL(join(directory, "index.ts")).href}?test=${Date.now()}`
+    )) as { betterAuthEntities: any[] };
+    const orm = await MikroORM.init({ dbName: ":memory:", entities: module.betterAuthEntities });
+
+    try {
+      await orm.schema.create();
+      expect(
+        [...orm.getMetadata().getAll().values()].map(({ tableName }) => tableName).sort(),
+      ).toEqual(["login_session", "member", "two_factor"]);
+    } finally {
+      await orm.close(true);
+    }
+  });
+
+  test("writes decorator models as separate files", async () => {
+    const directory = await mkdtemp(join(process.cwd(), ".tmp-generator-decorators-"));
+    temporaryDirectories.push(directory);
+    const generated = await writeMikroOrmSchemaDirectory({
+      tables,
+      directory,
+      entityStyle: "decorators",
+    });
+
+    expect(generated.directory).toBe(directory);
+    expect(generated.files.map(({ path }) => path)).toEqual(["user.ts", "session.ts", "index.ts"]);
+    expect(generated.files.find(({ path }) => path === "user.ts")?.code).toContain(
+      "export class User",
+    );
+    expect(generated.files.find(({ path }) => path === "session.ts")?.code).toContain(
+      'import { User } from "./user";',
+    );
+    expect(generated.files.find(({ path }) => path === "index.ts")?.code).toContain(
+      "export const betterAuthEntities",
+    );
+
+    expect((await readdir(directory)).sort()).toEqual(["index.ts", "session.ts", "user.ts"]);
   });
 });
