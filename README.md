@@ -62,7 +62,7 @@ Use the package CLI to generate individual entity files and an `index.ts` barrel
 
 ```bash
 # Using npx
-npx @a77ay/better-auth-mikro-orm generate \
+npx better-auth-mikro-orm generate \
   --config ./src/auth.ts \
   --output ./src/entities/auth \
   --yes

@@ -1,5 +1,5 @@
 ---
-"@a77ay/better-auth-mikro-orm": patch
+"@a77ay/better-auth-mikro-orm": minor
 ---
 
 Fix Better Auth 1.7.3+ type compatibility, generator edge cases, CLI working directory handling, and SQL/MongoDB query safety:
