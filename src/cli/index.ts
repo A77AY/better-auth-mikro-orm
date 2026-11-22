@@ -100,7 +100,7 @@ export async function runCli(arguments_: string[], io: CliIO = {}): Promise<numb
     }
   }
 
-  const generated = await writeMikroOrmSchemaDirectory({ ...generatorOptions, directory });
+  const generated = await writeMikroOrmSchemaDirectory({ ...generatorOptions, directory, cwd });
   write(
     `Generated ${generated.files.length - 1} entities and index.ts in ${generated.directory}\n`,
   );

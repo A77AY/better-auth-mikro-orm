@@ -5,11 +5,11 @@ import {
   type AdapterFactoryCustomizeAdapterCreator,
   type AdapterFactoryOptions,
   type CustomAdapter,
-  type DBAdapterDebugLogOption,
 } from "better-auth/adapters";
-import { generateMikroOrmSchema, type EntityStyle, type SchemaCasing } from "../generator";
+import { generateMikroOrmSchema } from "../generator";
 import { attachJoins, attachJoinsMany, selectFields } from "./joins";
 import { attachGeneratorOptions } from "./options";
+import type { MikroOrmAdapterOptions } from "./types";
 import {
   findOneForMutation,
   findProperty,
@@ -19,120 +19,16 @@ import {
   resolveEntity,
   toFilter,
   toPlainObject,
-  type DatabaseProvider,
   type EntityManagerProvider,
   type EntityRecord,
 } from "./utils";
+
+export type { MikroOrmAdapterOptions };
 
 type FindOneInput = Parameters<CustomAdapter["findOne"]>[0];
 type FindManyInput = Parameters<CustomAdapter["findMany"]>[0];
 type ConsumeOneInput = Parameters<NonNullable<CustomAdapter["consumeOne"]>>[0];
 type IncrementOneInput = Parameters<NonNullable<CustomAdapter["incrementOne"]>>[0];
-
-export interface MikroOrmAdapterOptions {
-  /**
-   * Database provider (e.g. "postgresql", "sqlite", "mysql", "mongodb").
-   * Automatically detected from the EntityManager platform if omitted.
-   */
-  provider?: DatabaseProvider;
-
-  /**
-   * Enable debug logs for the adapter.
-   *
-   * @default false
-   */
-  debugLogs?: DBAdapterDebugLogOption;
-
-  /**
-   * Use plural table names for generated entities and queries.
-   *
-   * @default false
-   */
-  usePlural?: boolean;
-
-  /**
-   * Whether the database platform supports native JSON fields.
-   *
-   * @default true
-   */
-  supportsJSON?: boolean;
-
-  /**
-   * Whether the database platform supports Date types.
-   *
-   * @default true
-   */
-  supportsDates?: boolean;
-
-  /**
-   * Whether the database platform supports native boolean types.
-   *
-   * @default true
-   */
-  supportsBooleans?: boolean;
-
-  /**
-   * Whether the database platform supports array types.
-   *
-   * @default false
-   */
-  supportsArrays?: boolean;
-
-  /**
-   * Whether the database platform supports numeric/serial IDs.
-   *
-   * @default true
-   */
-  supportsNumericIds?: boolean;
-
-  /**
-   * Whether to execute multiple operations in a transaction.
-   *
-   * If the database doesn't support transactions, set this to `false`.
-   * @default true
-   */
-  transactions?: boolean;
-
-  /**
-   * Default output file path used by the Better Auth CLI schema generator.
-   *
-   * @default "src/entities/auth.ts"
-   */
-  schemaFile?: string;
-
-  /**
-   * Default output directory used by the package CLI.
-   *
-   * @default "src/entities/auth"
-   */
-  directory?: string;
-
-  /**
-   * Field and column naming convention for the schema generator:
-   * - `"snake_case"`: Convert column field names to snake_case (e.g. `user_id`, `created_at`)
-   * - `"camelCase"` (default): Keep default Better Auth field names (e.g. `userId`, `createdAt`)
-   *
-   * @default "camelCase"
-   */
-  casing?: SchemaCasing;
-
-  /**
-   * Entity definition style for the schema generator:
-   * - `"define-entity"` (default): Modern MikroORM v7 fluent `defineEntity()` schema API with `InferEntity`
-   * - `"decorators"`: Class-based entities with `@Entity()`, `@Property()`, `@PrimaryKey()`, `@ManyToOne()`
-   *
-   * @default "define-entity"
-   */
-  entityStyle?: EntityStyle;
-
-  /**
-   * Optional suffix for generated entity file names (e.g. `".entity"` or `".model"`).
-   * When set to `".entity"`, generates `user.entity.ts`, `session.entity.ts`, etc.
-   *
-   * @default ""
-   */
-  fileSuffix?: string;
-}
 
 function createOrmAdapter(
   provider: EntityManagerProvider,
@@ -325,13 +221,19 @@ function createOrmAdapter(
               if (typeof current !== "number") {
                 throw new TypeError(`Cannot increment non-numeric field "${field}" on "${model}".`);
               }
-              update[property.name] = current + delta;
+              if (delta !== 0) {
+                update[property.name] = { $inc: delta };
+              }
             } else {
               update[property.name] = raw("?? + ?", [
                 property.fieldNames[0] ?? property.name,
                 delta,
               ]);
             }
+          }
+
+          if (Object.keys(update).length === 0) {
+            return toPlainObject(instance) as T;
           }
 
           const primaryWhere = primaryKeyWhere(meta, instance);

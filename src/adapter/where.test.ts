@@ -197,4 +197,18 @@ describe("transformWhere", () => {
       $or: [{ role: { $eq: "admin" } }, { role: { $eq: "superuser" } }],
     });
   });
+
+  test("uses escaped raw LIKE predicates when SQL patterns include wildcards", () => {
+    const sensitive = transformWhere([{ field: "name", operator: "contains", value: "100%_\\" }], {
+      meta: mockMeta,
+      mongo: false,
+    });
+    const insensitive = transformWhere(
+      [{ field: "name", operator: "starts_with", value: "A_B%", mode: "insensitive" }],
+      { meta: mockMeta, mongo: false },
+    );
+
+    expect(Object.getOwnPropertySymbols(sensitive)).toHaveLength(1);
+    expect(Object.getOwnPropertySymbols(insensitive)).toHaveLength(1);
+  });
 });

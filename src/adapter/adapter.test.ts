@@ -438,4 +438,66 @@ describe("mikroOrmAdapter", () => {
     const factory = mikroOrmAdapter(orm.em, { transactions: true });
     expect(typeof factory).toBe("function");
   });
+
+  test("escapes literal SQL LIKE wildcards in pattern queries", async () => {
+    const adapter = createAdapter();
+    await createUser(adapter, "pct", { name: "50% off", email: "user_1@example.com" });
+    await createUser(adapter, "plain", { name: "500 off", email: "userA1@example.com" });
+
+    const percentMatches = await adapter.findMany<UserRecord>({
+      model: "user",
+      where: [{ field: "name", operator: "contains", value: "50%" }],
+    });
+    expect(percentMatches.map(({ id }) => id)).toEqual(["pct"]);
+
+    const underscoreMatches = await adapter.findMany<UserRecord>({
+      model: "user",
+      where: [{ field: "email", operator: "starts_with", value: "USER_1", mode: "insensitive" }],
+    });
+    expect(underscoreMatches.map(({ id }) => id)).toEqual(["pct"]);
+  });
+
+  test("uses atomic $inc for MongoDB incrementOne and handles zero delta", async () => {
+    const meta = {
+      class: UserRecord,
+      className: "UserRecord",
+      tableName: "user",
+      primaryKeys: ["id"],
+      properties: {
+        id: { name: "id", fieldNames: ["_id"] },
+        count: { name: "count", fieldNames: ["count"] },
+        role: { name: "role", fieldNames: ["role"] },
+      },
+    };
+    const stored = { id: "m-1", count: 2, role: "member" };
+    let lastUpdate: Record<string, unknown> | undefined;
+    const mockMongoEm = {
+      getMetadata: () => ({ getAll: () => new Map([["user", meta]]) }),
+      getPlatform: () => ({ constructor: { name: "MongoPlatform" } }),
+      findOne: async () => ({ ...stored }),
+      nativeUpdate: async (_entity: unknown, _where: unknown, data: Record<string, unknown>) => {
+        lastUpdate = data;
+        stored.count += (data.count as { $inc: number }).$inc;
+        return 1;
+      },
+    };
+
+    const mongoAdapter = mikroOrmAdapter(mockMongoEm as never)(betterAuthOptions);
+    const incremented = await mongoAdapter.incrementOne<UserRecord>({
+      model: "user",
+      where: [{ field: "id", value: "m-1" }],
+      increment: { count: 3 },
+    });
+    expect(lastUpdate).toEqual({ count: { $inc: 3 } });
+    expect(incremented).toMatchObject({ id: "m-1", count: 5 });
+
+    lastUpdate = undefined;
+    const noOp = await mongoAdapter.incrementOne<UserRecord>({
+      model: "user",
+      where: [{ field: "id", value: "m-1" }],
+      increment: { count: 0 },
+    });
+    expect(lastUpdate).toBeUndefined();
+    expect(noOp).toMatchObject({ id: "m-1", count: 5 });
+  });
 });

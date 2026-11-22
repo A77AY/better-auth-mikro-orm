@@ -11,31 +11,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
-    name: Test ${{ matrix.db }} (Node ${{ matrix.node-version }})
+  test-sqlite:
+    name: Test sqlite (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:alpine
-        env:
-          POSTGRES_DB: better_auth_test
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      mongodb:
-        image: mongo:latest
-        ports:
-          - 27017:27017
     strategy:
       fail-fast: false
       matrix:
         node-version: ["24", "latest"]
-        db: ["sqlite", "postgres", "mongodb"]
 
     steps:
       - name: Checkout
@@ -52,30 +34,96 @@ jobs:
 
       - name: Check (Format, Lint, Types)
         run: vp check
-        if: matrix.db == 'sqlite'
 
       - name: Run tests with coverage
         run: vp test --coverage
-        if: matrix.db == 'sqlite'
         env:
           DB_TYPE: sqlite
 
       - name: Upload coverage report to Codecov
         uses: codecov/codecov-action@v7
-        if: matrix.db == 'sqlite' && matrix.node-version == '24'
+        if: matrix.node-version == '24'
         with:
           files: ./coverage/lcov.info
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Run tests
-        run: vp test
-        if: matrix.db != 'sqlite'
-        env:
-          DB_TYPE: ${{ matrix.db }}
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/better_auth_test
-          MONGODB_URI: mongodb://localhost:27017/better_auth_test
-
       - name: Build library
         run: vp run build
-        if: matrix.db == 'sqlite'
+
+  test-postgres:
+    name: Test postgres (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:alpine
+        env:
+          POSTGRES_DB: better_auth_test
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["24", "latest"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1.21.2
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: true
+
+      - name: Install dependencies
+        run: vp install
+
+      - name: Run tests
+        run: vp test
+        env:
+          DB_TYPE: postgres
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/better_auth_test
+
+  test-mongodb:
+    name: Test mongodb (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["24", "latest"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1.21.2
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: true
+
+      - name: Install dependencies
+        run: vp install
+
+      - name: Run tests
+        run: vp test
+        env:
+          DB_TYPE: mongodb
+          MONGODB_URI: mongodb://localhost:27017/better_auth_test

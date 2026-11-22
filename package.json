@@ -76,7 +76,7 @@
   },
   "peerDependencies": {
     "@mikro-orm/core": "^7.0.0",
-    "better-auth": "^1.0.0"
+    "better-auth": "^1.7.0"
   },
   "devEngines": {
     "packageManager": {

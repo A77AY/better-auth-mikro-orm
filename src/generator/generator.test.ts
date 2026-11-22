@@ -124,7 +124,7 @@ describe("generateMikroOrmSchema", () => {
     });
 
     expect(result.code).toContain(
-      'import { Entity, Enum, Index, ManyToOne, PrimaryKey, Property, Unique } from "@mikro-orm/core";',
+      'import { Entity, Enum, ManyToOne, PrimaryKey, Property, Unique } from "@mikro-orm/core";',
     );
     expect(result.code).toContain('@Entity({ tableName: "member" })');
     expect(result.code).toContain("export class User {");
@@ -339,6 +339,77 @@ describe("generateMikroOrmSchema", () => {
     expect(decoratorResult.code).toContain('@Property({ type: "number", default: 1 })');
     expect(decoratorResult.code).toContain('@Property({ type: "text" })');
     expect(decoratorResult.code).toContain('@Property({ type: "array" })');
+  });
+
+  test("handles self-referencing entities in defineEntity without TDZ errors", async () => {
+    const selfRefTables = {
+      organization: {
+        modelName: "organization",
+        fields: {
+          name: { type: "string", required: true },
+          parentId: {
+            type: "string",
+            required: false,
+            references: { model: "organization", field: "id", onDelete: "set null" },
+          },
+        },
+      },
+    } satisfies BetterAuthDBSchema;
+
+    const result = generateMikroOrmSchema({ tables: selfRefTables });
+    expect(result.code).toContain(
+      'parentId: () => p.manyToOne(Organization).mapToPk().deleteRule("set null").nullable(),',
+    );
+
+    const directory = await mkdtemp(join(process.cwd(), ".tmp-generator-"));
+    temporaryDirectories.push(directory);
+    const file = join(directory, "self-ref-entities.ts");
+    await writeFile(file, result.code);
+    const module = (await import(`${pathToFileURL(file).href}?test=${Date.now()}`)) as {
+      betterAuthEntities: any[];
+    };
+    const orm = await MikroORM.init({ dbName: ":memory:", entities: module.betterAuthEntities });
+
+    try {
+      await orm.schema.create();
+      expect([...orm.getMetadata().getAll().values()].map(({ tableName }) => tableName)).toEqual([
+        "organization",
+      ]);
+    } finally {
+      await orm.close(true);
+    }
+  });
+
+  test("resolves non-id foreign key types and emits only used decorator imports", () => {
+    const nonIdRefTables = {
+      user: {
+        modelName: "user",
+        fields: {
+          email: { type: "string", required: true, unique: true },
+        },
+      },
+      invite: {
+        modelName: "invite",
+        fields: {
+          userEmail: {
+            type: "string",
+            required: true,
+            references: { model: "user", field: "email" },
+          },
+        },
+      },
+    } satisfies BetterAuthDBSchema;
+
+    const result = generateMikroOrmSchema({
+      tables: nonIdRefTables,
+      entityStyle: "decorators",
+      numericIds: true,
+    });
+
+    expect(result.code).toContain(
+      'import { Entity, ManyToOne, PrimaryKey, Property } from "@mikro-orm/core";',
+    );
+    expect(result.code).toContain("userEmail!: string;");
   });
 });
 

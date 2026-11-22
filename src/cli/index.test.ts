@@ -159,4 +159,20 @@ describe("better-auth-mikro-orm CLI", () => {
       "The config must export a Better Auth instance or configuration",
     );
   });
+
+  test("writes generated files relative to io.cwd when output is relative", async () => {
+    const directory = await mkdtemp(join(process.cwd(), ".tmp-cli-cwd-"));
+    temporaryDirectories.push(directory);
+    await writeFile(join(directory, "auth.ts"), "export default { options: {} };\n");
+
+    const exitCode = await runCli(["generate", "--config", "auth.ts", "--output", "entities"], {
+      cwd: directory,
+      stdout: () => {},
+    });
+
+    expect(exitCode).toBe(0);
+    expect(await readFile(join(directory, "entities", "user.ts"), "utf8")).toContain(
+      "export const User",
+    );
+  });
 });

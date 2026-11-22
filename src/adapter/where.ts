@@ -22,11 +22,25 @@ export type WhereInput =
         | "ends_with"
         | (string & {});
       connector?: "AND" | "OR";
-      mode?: "insensitive" | "default";
+      mode?: "insensitive" | "sensitive" | "default";
     };
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function hasLikeWildcard(value: string) {
+  return /[%_\\]/.test(value);
+}
+
+function escapeLike(value: string) {
+  return value.replace(/[\\%_]/g, "\\$&");
+}
+
+function buildLikePattern(operator: WhereInput["operator"], value: string) {
+  if (operator === "contains") return `%${value}%`;
+  if (operator === "starts_with") return `${value}%`;
+  return `%${value}`;
 }
 
 function insensitivePattern(operator: WhereInput["operator"], value: string) {
@@ -118,14 +132,13 @@ function transformCondition(
   ) {
     const column = property.fieldNames[0] ?? propName;
     const normalized = value.toLowerCase();
+    if (["contains", "starts_with", "ends_with"].includes(operator) && hasLikeWildcard(value)) {
+      const pattern = buildLikePattern(operator, escapeLike(normalized));
+      return { [raw("lower(??) like ? escape ?", [column, pattern, "\\"])]: [] };
+    }
+
     const transformedValue =
-      operator === "contains"
-        ? `%${normalized}%`
-        : operator === "starts_with"
-          ? `${normalized}%`
-          : operator === "ends_with"
-            ? `%${normalized}`
-            : normalized;
+      operator === "eq" || operator === "ne" ? normalized : buildLikePattern(operator, normalized);
     return {
       [raw<string>("lower(??)", [column])]: {
         [operator === "ne" ? "$ne" : operator === "eq" ? "$eq" : "$like"]: transformedValue,
@@ -149,9 +162,13 @@ function transformCondition(
       return { [propName]: { $re: pattern } };
     }
 
-    if (operator === "contains") return { [propName]: { $like: `%${value}%` } };
-    if (operator === "starts_with") return { [propName]: { $like: `${value}%` } };
-    return { [propName]: { $like: `%${value}` } };
+    if (hasLikeWildcard(value)) {
+      const column = property.fieldNames[0] ?? propName;
+      const pattern = buildLikePattern(operator, escapeLike(value));
+      return { [raw("?? like ? escape ?", [column, pattern, "\\"])]: [] };
+    }
+
+    return { [propName]: { $like: buildLikePattern(operator, value) } };
   }
 
   const mikroOperator = operator === "eq" ? "$eq" : `$${operator}`;
