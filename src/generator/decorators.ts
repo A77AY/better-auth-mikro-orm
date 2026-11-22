@@ -43,8 +43,15 @@ function renderDecoratorProperty(
     if (reference.field !== "id") opts.push(`targetKey: ${quote(referencedProperty)}`);
     if (field.required === false) opts.push("nullable: true");
 
+    const tsType =
+      reference.field !== "id" && referencedField
+        ? scalarType(referencedField, options).typescript
+        : options.numericIds
+          ? "number"
+          : "string";
+
     return `  @ManyToOne(() => ${targetModel}, { ${opts.join(", ")} })
-  ${propertyKey(propertyName)}${optional}: ${options.numericIds ? "number" : "string"};`;
+  ${propertyKey(propertyName)}${optional}: ${tsType};`;
   }
 
   if (Array.isArray(field.type)) {
@@ -151,6 +158,21 @@ function referencedModels(table: Table, entries: [string, Table][]) {
   return models;
 }
 
+const decoratorSymbols = [
+  "Entity",
+  "Enum",
+  "Index",
+  "ManyToOne",
+  "PrimaryKey",
+  "Property",
+  "Unique",
+] as const;
+
+function renderDecoratorImports(code: string) {
+  const used = decoratorSymbols.filter((symbol) => code.includes(`@${symbol}(`));
+  return `import { ${used.join(", ")} } from "@mikro-orm/core";`;
+}
+
 export function generateDecoratorsSchema(options: MikroOrmSchemaGeneratorOptions): string {
   const entries = getSortedTableEntries(options.tables);
   const modelNames = createModelNames(entries);
@@ -158,12 +180,13 @@ export function generateDecoratorsSchema(options: MikroOrmSchemaGeneratorOptions
   const sections = entries.map(([defaultModel, table]) =>
     renderDecoratorEntity(defaultModel, table, entries, modelNames, options),
   );
+  const body = sections.join("\n\n");
 
   const exports = entries.map(([model]) => `  ${modelNames.get(model)},`).join("\n");
 
-  return `import { Entity, Enum, Index, ManyToOne, PrimaryKey, Property, Unique } from "@mikro-orm/core";
+  return `${renderDecoratorImports(body)}
 
-${sections.join("\n\n")}
+${body}
 
 export const betterAuthEntities = [
 ${exports}
@@ -186,12 +209,13 @@ export function generateDecoratorFiles(
         return `import { ${targetName} } from "./${targetFile}";`;
       });
     const importBlock = imports.length ? `${imports.join("\n")}\n` : "";
+    const entityCode = renderDecoratorEntity(defaultModel, table, entries, modelNames, options);
 
     return {
       path: fileNames.get(defaultModel)!,
-      code: `import { Entity, Enum, Index, ManyToOne, PrimaryKey, Property, Unique } from "@mikro-orm/core";
+      code: `${renderDecoratorImports(entityCode)}
 ${importBlock}
-${renderDecoratorEntity(defaultModel, table, entries, modelNames, options)}
+${entityCode}
 `,
     };
   });

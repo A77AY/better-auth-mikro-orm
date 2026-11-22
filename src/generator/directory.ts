@@ -18,10 +18,10 @@ export function generateMikroOrmSchemaDirectory(
 }
 
 export async function writeMikroOrmSchemaDirectory(
-  options: MikroOrmSchemaGeneratorOptions,
+  options: MikroOrmSchemaGeneratorOptions & { cwd?: string },
 ): Promise<GeneratedSchemaDirectory> {
   const generated = generateMikroOrmSchemaDirectory(options);
-  const directory = resolve(process.cwd(), generated.directory);
+  const directory = resolve(options.cwd ?? process.cwd(), generated.directory);
   await mkdir(directory, { recursive: true });
   await Promise.all(
     generated.files.map(async (file) => {

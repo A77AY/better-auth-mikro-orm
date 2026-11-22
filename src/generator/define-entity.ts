@@ -75,7 +75,10 @@ function renderDefineProperty(
   if (field.unique) chains.push("unique()");
   if (field.index) chains.push("index()");
 
-  return `    ${propertyKey(propertyName)}: ${chains.join(".")},`;
+  const propertyExpression =
+    reference && referencedEntry ? `() => ${chains.join(".")}` : chains.join(".");
+
+  return `    ${propertyKey(propertyName)}: ${propertyExpression},`;
 }
 
 function renderDefineIndexes(table: Table) {
