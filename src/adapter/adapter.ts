@@ -26,8 +26,8 @@ import {
 
 type FindOneInput = Parameters<CustomAdapter["findOne"]>[0];
 type FindManyInput = Parameters<CustomAdapter["findMany"]>[0];
-type ConsumeOneInput = Parameters<CustomAdapter["consumeOne"]>[0];
-type IncrementOneInput = Parameters<CustomAdapter["incrementOne"]>[0];
+type ConsumeOneInput = Parameters<NonNullable<CustomAdapter["consumeOne"]>>[0];
+type IncrementOneInput = Parameters<NonNullable<CustomAdapter["incrementOne"]>>[0];
 
 export interface MikroOrmAdapterOptions {
   /**
