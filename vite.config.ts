@@ -17,7 +17,9 @@ export default defineConfig({
       typeCheck: true,
     },
   },
-  fmt: {},
+  fmt: {
+    ignorePatterns: ["CHANGELOG.md"],
+  },
   test: {
     coverage: {
       provider: "v8",
