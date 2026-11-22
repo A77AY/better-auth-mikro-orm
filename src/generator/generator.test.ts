@@ -391,6 +391,11 @@ describe("generateMikroOrmSchema", () => {
       invite: {
         modelName: "invite",
         fields: {
+          userId: {
+            type: "string",
+            required: true,
+            references: { model: "user", field: "id" },
+          },
           userEmail: {
             type: "string",
             required: true,
@@ -409,6 +414,7 @@ describe("generateMikroOrmSchema", () => {
     expect(result.code).toContain(
       'import { Entity, ManyToOne, PrimaryKey, Property } from "@mikro-orm/core";',
     );
+    expect(result.code).toContain("userId!: number;");
     expect(result.code).toContain("userEmail!: string;");
   });
 });
