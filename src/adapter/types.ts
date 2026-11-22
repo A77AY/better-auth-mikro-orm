@@ -69,7 +69,7 @@ export interface MikroOrmAdapterOptions {
   /**
    * Default output file path used by the Better Auth CLI schema generator.
    *
-   * @default "src/entities/auth.ts"
+   * @default "auth-entities.ts"
    */
   schemaFile?: string;
 

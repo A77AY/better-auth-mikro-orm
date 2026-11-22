@@ -1,11 +1,10 @@
 # @a77ay/better-auth-mikro-orm
 
-MikroORM database adapter and entity generator for [Better Auth](https://www.better-auth.com).
+[MikroORM](https://mikro-orm.io) database adapter and entity generator for [Better Auth](https://www.better-auth.com).
 
 [**🔌 Database Adapter**](#1-adapter-setup) &nbsp;•&nbsp; [**⚡ CLI Entity Generator**](#2-schema--entity-generation)
 
 [![npm version](https://img.shields.io/npm/v/@a77ay/better-auth-mikro-orm.svg?color=blue&logo=npm&logoColor=white)](https://www.npmjs.com/package/@a77ay/better-auth-mikro-orm)
-[![bundle size](https://img.shields.io/bundlephobia/minzip/@a77ay/better-auth-mikro-orm.svg?logo=vite&logoColor=white)](https://bundlephobia.com/package/@a77ay/better-auth-mikro-orm)
 [![Tests](https://img.shields.io/github/actions/workflow/status/A77AY/better-auth-mikro-orm/ci.yml?branch=main&label=550%2B%20tests&logo=github&logoColor=white)](https://github.com/A77AY/better-auth-mikro-orm/actions/workflows/ci.yml)
 [![codecov](https://img.shields.io/codecov/c/github/A77AY/better-auth-mikro-orm?logo=codecov&logoColor=white)](https://codecov.io/gh/A77AY/better-auth-mikro-orm)
 
@@ -53,7 +52,7 @@ export const auth = betterAuth({
 });
 ```
 
-Pass your `MikroORM` instance, `EntityManager`, or a getter function. When passing `orm`, the adapter automatically uses `RequestContext.getEntityManager()` per HTTP request and falls back to `orm.em` for CLI commands and background scripts.
+Pass your `MikroORM` instance, `EntityManager`, or a getter function. When passing `orm`, the adapter automatically uses `RequestContext.getEntityManager()` per HTTP request and falls back to a forked `orm.em` for CLI commands and background scripts.
 
 ### 2. Schema / Entity Generation
 
@@ -69,7 +68,7 @@ npx @a77ay/better-auth-mikro-orm generate \
   --yes
 
 # Using pnpm
-pnpm exec @a77ay/better-auth-mikro-orm generate \
+pnpm exec better-auth-mikro-orm generate \
   --config ./src/auth.ts \
   --output ./src/entities/auth \
   --yes
@@ -146,18 +145,18 @@ The `mikroOrmAdapter` accepts the database instance or getter as its first argum
 mikroOrmAdapter(em, options?)
 ```
 
-| Parameter / Option | Type                                                 | Default                  | Description                                                                             |
-| ------------------ | ---------------------------------------------------- | ------------------------ | --------------------------------------------------------------------------------------- |
-| `em` (1st arg)     | `MikroORM \| EntityManager \| (() => EntityManager)` | **Required**             | MikroORM instance, `EntityManager`, or getter returning the request-scoped instance.    |
-| `provider`         | `DatabaseProvider`                                   | Auto-detected            | Database provider (`"postgresql"`, `"sqlite"`, `"mysql"`, `"mongodb"`, or custom).      |
-| `casing`           | `"snake_case" \| "camelCase"`                        | `"camelCase"`            | Naming convention for generated database columns.                                       |
-| `entityStyle`      | `"define-entity" \| "decorators"`                    | `"define-entity"`        | Entity definition style (`defineEntity` fluent schema or `@Entity()` class decorators). |
-| `fileSuffix`       | `string`                                             | `""`                     | Custom file suffix for entity files (e.g. `".entity"` generates `user.entity.ts`).      |
-| `directory`        | `string`                                             | `"src/entities/auth"`    | Default output directory used by the package CLI.                                       |
-| `schemaFile`       | `string`                                             | `"src/entities/auth.ts"` | Default output file path for CLI schema generation.                                     |
-| `debugLogs`        | `boolean \| DBAdapterDebugLogOption`                 | `false`                  | Enable Better Auth adapter debug logging.                                               |
-| `usePlural`        | `boolean`                                            | `false`                  | Use plural table names for generated entities.                                          |
-| `transactions`     | `boolean`                                            | `true`                   | Whether to execute multi-operation callbacks in a transaction.                          |
+| Parameter / Option | Type                                                             | Default               | Description                                                                             |
+| ------------------ | ---------------------------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------- |
+| `em` (1st arg)     | `MikroORM \| EntityManager \| (() => EntityManager \| MikroORM)` | **Required**          | MikroORM instance, `EntityManager`, or getter returning the request-scoped instance.    |
+| `provider`         | `DatabaseProvider`                                               | Auto-detected         | Database provider (`"postgresql"`, `"sqlite"`, `"mysql"`, `"mongodb"`, or custom).      |
+| `casing`           | `"snake_case" \| "camelCase"`                                    | `"camelCase"`         | Naming convention for generated database columns.                                       |
+| `entityStyle`      | `"define-entity" \| "decorators"`                                | `"define-entity"`     | Entity definition style (`defineEntity` fluent schema or `@Entity()` class decorators). |
+| `fileSuffix`       | `string`                                                         | `""`                  | Custom file suffix for entity files (e.g. `".entity"` generates `user.entity.ts`).      |
+| `directory`        | `string`                                                         | `"src/entities/auth"` | Default output directory used by the package CLI.                                       |
+| `schemaFile`       | `string`                                                         | `"auth-entities.ts"`  | Default output file path for CLI schema generation.                                     |
+| `debugLogs`        | `boolean \| DBAdapterDebugLogOption`                             | `false`               | Enable Better Auth adapter debug logging.                                               |
+| `usePlural`        | `boolean`                                                        | `false`               | Use plural table names for generated entities.                                          |
+| `transactions`     | `boolean`                                                        | `true`                | Whether to execute multi-operation callbacks in a transaction.                          |
 
 ## Development
 
